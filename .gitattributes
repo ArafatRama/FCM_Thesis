@@ -1,0 +1,8 @@
+* text=auto
+
+*.R text eol=lf
+*.r text eol=lf
+*.md text eol=lf
+*.csv text eol=lf
+*.xlsx binary
+*.RData binary

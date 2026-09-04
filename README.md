@@ -1,0 +1,128 @@
+# Longevity bond pricing thesis code
+
+This repository contains the R code and supporting data used for the mortality modelling, forecasting, and longevity bond pricing work in the thesis.
+
+The main analysis is in `code/00setup.r`. The smaller `code/thesis plota.r` script creates several standalone figures used in the thesis. Package versions are recorded in `code/renv.lock`.
+
+## Requirements
+
+- R 4.5.1
+- RStudio is optional, but the included `code/code.Rproj` file makes it the easiest way to open the project.
+- An account with the Human Mortality Database, with access to the England and Wales and Ireland datasets.
+- The local input files listed under **Data files** below.
+
+Some R packages are compiled from source, so a compiler toolchain may also be required. On macOS, install the Xcode Command Line Tools if package installation reports compiler errors.
+
+## Set up the project
+
+Clone the repository and enter its directory:
+
+```sh
+git clone <repository-url>
+cd <repository-directory>
+```
+
+Create your personal HMD environment file from the example:
+
+```sh
+cp .Renviron.example code/.Renviron
+```
+
+Open `code/.Renviron` and replace the placeholder values with your Human Mortality Database username and password. The real `.Renviron` file is ignored by Git and must never be committed.
+
+The analysis currently also calls `readRenviron("~/.Renviron")`. Make sure the same two variables are present in your home-level `.Renviron`, or are already available in your R environment, before running the script.
+
+Next, open `code/code.Rproj` in RStudio. Alternatively, enter the code directory from a terminal:
+
+```sh
+cd code
+R
+```
+
+Restore the recorded package environment:
+
+```r
+if (!requireNamespace("renv", quietly = TRUE)) {
+  install.packages("renv")
+}
+
+renv::restore()
+```
+
+## Data files
+
+The analysis downloads mortality data directly from the Human Mortality Database using the credentials above. It also reads the following local files:
+
+| Input | Repository location |
+|---|---|
+| Mercer annuity rates | `data/Rates to send_hardcoded.xlsx` |
+| Bank of England nominal daily rates | `code/glcnominalddata/GLC Nominal daily data_2016 to 2024.xlsx` |
+| ECB yield-curve observations | `data/data.csv` |
+
+The ECB CSV is approximately 3.3 GB and is intentionally excluded from Git. Copy it into `data/data.csv` before running the pricing part of the analysis. See `data/README.md` for its expected format.
+
+### Existing absolute paths
+
+The source code has been preserved exactly as supplied. Lines 3132, 3150, and 3155 of `code/00setup.r` contain absolute paths from the computer on which the analysis was written:
+
+```text
+/Users/ramaarafat/Documents/MSc thesis/...
+```
+
+Those paths must resolve to the three files listed above. On another computer, either reproduce that directory layout or update only those three local path values before running the pricing section. No other source-code changes are required for the repository layout.
+
+## Run the analysis
+
+Run commands from the `code` directory so that the R project and `renv` environment are activated correctly.
+
+To run the complete main analysis:
+
+```r
+source("00setup.r")
+```
+
+From a terminal, the equivalent command is:
+
+```sh
+cd code
+Rscript 00setup.r
+```
+
+The script downloads HMD data, performs exploratory checks, fits the mortality and forecasting models, runs the simulations, and calculates the longevity bond prices. It is a long, sequential research script, so it should be run from the beginning in a clean R session. Its runtime depends on the computer and on the installation used by `keras3`.
+
+To create the standalone thesis figures:
+
+```r
+source("thesis plota.r")
+```
+
+or:
+
+```sh
+Rscript "thesis plota.r"
+```
+
+This script writes PDF figures into the current working directory.
+
+## Repository layout
+
+```text
+.
+├── README.md
+├── .Renviron.example
+├── code/
+│   ├── .Renviron             # local only; not committed
+│   ├── 00setup.r
+│   ├── thesis plota.r
+│   ├── code.Rproj
+│   ├── renv.lock
+│   ├── renv/
+│   ├── glcnominalddata/
+│   └── glcnominalmonthedata/
+└── data/
+    ├── README.md
+    ├── Rates to send_hardcoded.xlsx
+    └── data.csv                 # local only; not committed
+```
+
+R session files, IDE settings, credentials, temporary Office files, generated figures, and the large ECB CSV are excluded from version control.

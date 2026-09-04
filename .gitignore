@@ -1,0 +1,31 @@
+# macOS and IDE metadata
+.DS_Store
+.idea/
+*.iml
+
+# R and RStudio session files
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+workspace/
+
+# Local credentials
+.Renviron
+.Renviron.sh
+
+# renv local state
+renv/library/
+renv/staging/
+renv/python/
+
+# Temporary Office files
+~$*
+
+# Large input supplied outside Git
+data/data.csv
+
+# Figures produced by the standalone plotting script
+code/wang_normal.pdf
+code/wang_lognormal.pdf
+code/activation_functions.pdf
