@@ -2,7 +2,7 @@
 
 This repository contains the R code and supporting data used for the mortality modelling, forecasting, and longevity bond pricing work in the thesis.
 
-The main analysis is in `code/00setup.r`. The smaller `code/thesis plota.r` script creates several standalone figures used in the thesis. Package versions are recorded in `code/renv.lock`.
+The main analysis is in `code/00setup.r`. The smaller `code/thesis_plots.r` script creates several standalone figures used in the thesis. Package versions are recorded in `code/renv.lock`.
 
 ## Requirements
 
