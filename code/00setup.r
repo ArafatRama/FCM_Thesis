@@ -1,4 +1,4 @@
-#pulling the data 
+#pulling the data
 library(HMDHFDplus)
 readRenviron("~/.Renviron")
 hmd_username <- Sys.getenv("HMD_USERNAME")
@@ -15,7 +15,7 @@ head(mx)
 #Now I need to get the data that I want 
 print(getHMDitemavail("GBRTENW"),n=86) # to check all the data the hmd offers
 
-# we pull the period data that we need (we don't look at cohert data)
+# we pull the period data that we need (we don't look at cohort data)
 country    <- "GBRTENW"      # England & Wales, total
 min_year <- 1950
 max_year <- 2022           # HMD's current end year for E&W
@@ -49,7 +49,7 @@ names(dat_irl) <- columns
 
 # data exploration --------------------------------------------------------
 lapply(dat_irl, dim)
-#alll data has 8103 rows which is 73 years* 111 ages 0-110
+#all data has 8103 rows which is 73 years* 111 ages 0-110
 #Sanity checks for Mx
 #define each item alone
 D_UK <- dat_uk$Deaths_1x1
@@ -70,13 +70,13 @@ D_IRL  <- D_IRL[order(D_IRL$Year, D_IRL$Age), ]
 E_IRL  <- E_IRL[order(E_IRL$Year, E_IRL$Age), ]
 Mx_IRL <- Mx_IRL[order(Mx_IRL$Year, Mx_IRL$Age), ]
 
-#making sure theindeces match 
+#making sure the indices match 
 stopifnot(all(D_UK$Year == Mx_UK$Year), all(D_UK$Age == Mx_UK$Age),
           all(E_UK$Year == Mx_UK$Year), all(E_UK$Age == Mx_UK$Age))
 stopifnot(all(D_IRL$Year == Mx_IRL$Year), all(D_IRL$Age == Mx_IRL$Age),
           all(E_IRL$Year == Mx_IRL$Year), all(E_IRL$Age == Mx_IRL$Age))
 
-#now we preform the sanity check for the total 
+#now we perform the sanity check for the total 
 max((D_UK$Total/E_UK$Total)-Mx_UK$Total) #shows NA since in really old ages exposure is zero like in year 1950 and age 110 
 E_UK[which.min(E_UK$Total), ]
 
@@ -92,10 +92,10 @@ summary(diffdat1)
 table(diffdat1$Age)
 sum(diffdat1$Age > 95)/ nrow(diffdat1)
 #we can see that 99.66% of the uk data that showed a difference more that 1e-6 are ages beyond 95 and 99.1% of the ireland data that showed a difference more that 1e-6 are ages beyond 90 and the 
-#reason for that is the precious of the deaths and exposure is to 2 decimal places while the Mx is calculated with more precision 
+#reason for that is the precision of the deaths and exposure is to 2 decimal places while the Mx is calculated with more precision 
 # in the hmd data and that effect is exploited in older ages the exposure is already tiny so any rounding will have a great effect.
-# also after reasearching the hmd approach, the Mx that is produced in the hmd reports is already smoothed by the Kannisto model above ages of 80 years and especially above 95 where the transition 
-#from 80 to 95 they depend of the number of deathes if it's less that 100 then we use the fitted Mx if not then we use the raw one
+# also after researching the hmd approach, the Mx that is produced in the hmd reports is already smoothed by the Kannisto model above ages of 80 years and especially above 95 where the transition 
+#from 80 to 95 they depend of the number of deaths if it's less that 100 then we use the fitted Mx if not then we use the raw one
 # that's why we see differences especially in those ages I will now check the deaths of ireland and uk were the diff was >1e-6 and see how many of them where smoothed it would make since if ireland had a percentage near 1 
 #since the age spread for ireland was bigger in the difference
 # Uk ----
@@ -159,7 +159,7 @@ m_uk_f+m1_uk_f
 diffdat1_f[!band_uk_1_f,]
 diffdat1_f[!band_uk_1_f,]$ratio-diffdat1_f[!band_uk_1_f,]$mx_hmd
 
-#we can see that for uk 99.6 % of the data with difference in Mx is for ages older than 95 so the smoothing was used and no younger ages recoreded deaths less than 100
+#we can see that for uk 99.6 % of the data with difference in Mx is for ages older than 95 so the smoothing was used and no younger ages recorded deaths less than 100
 # so the .4% which is 2 records for age 95 and the difference between the raw and the hmd ratio is considerably small and is because of approximation
 #while for Ireland 85% of those who had high differences where smoothed with 2.6% of them having death records less than 100, the rest of the 15% had a max absolute difference of  
 #5.667242e-06 which means the rest a result of the rounding.
@@ -215,8 +215,8 @@ table(zero_D_IRL_Female$Age)
 table(zero_D_UK_Total$Age)
 table(zero_D_IRL_Total$Age)
 
-# the zero deathes are more frequent in the higher ages which is explained by lower exposure
-#and the zeros in the exposure and deathes will cause issues for us when building the lee carter so we have to deal with them 
+# the zero deaths are more frequent in the higher ages which is explained by lower exposure
+#and the zeros in the exposure and deaths will cause issues for us when building the lee carter so we have to deal with them 
 
 #3D surface plotting 
 library(ggplot2)
@@ -382,7 +382,7 @@ par(mfrow = c(1,1))
 p_3d_Mx_UK_Male
 p_3d_Mx_UK_Female
 
-#we can see that even with the Kannisto model the Mx is still noisy and inconsistant across all years that's why we need to think 
+#we can see that even with the Kannisto model the Mx is still noisy and inconsistent across all years that's why we need to think 
 #if we need to cap the ages up to 100
 # we can also see the expected shape of high exposure in the infant years, the hump around 20 and the steep rise in old ages.
 
@@ -595,9 +595,9 @@ big_years_UK <- big_years_UK[order(-big_years_UK$Mean_log_change), ]
 head(big_years_UK, 10)
 length(mean_change_UK)
 mean_change_UK[70:72]
-#we can see that the 2020 mortality rates had the highest increased which is due to Covid-19 pandamic and we can also see that the year 2021 had an extra considerably lower increanse in mortality with respect to 2020 but it's still positive and it hasb'e gone
+#we can see that the 2020 mortality rates had the highest increased which is due to Covid-19 pandemic and we can also see that the year 2021 had an extra considerably lower increase in mortality with respect to 2020 but it's still positive and it hasn't gone
 #down since the covid 19 was still going in those years so higher moralities.
-#also, it's worth noting even though we will not consider cohort trend, that those who were 31 years old in 1951 meaning that they were born on 1920 which is the first generation born after the first world war where there was poverty and hunger, so  poor nutrision in addition to the spread of infictionus diseases in that generation had the mortalty rates to be cared out as high.    
+#also, it's worth noting even though we will not consider cohort trend, that those who were 31 years old in 1951 meaning that they were born on 1920 which is the first generation born after the first world war where there was poverty and hunger, so  poor nutrition in addition to the spread of infectious diseases in that generation had the mortality rates to be cared out as high.    
 
 # Zoomed heatmap: 2019-2020 ---------------------------------------------
 
@@ -660,29 +660,16 @@ mtext("Red = mortality increased from previous year; Blue = mortality decreased"
 #end of data exploration 
 
 
+# Chapter 4: The Lee-Carter Model
+# Section 4.4: The Data: Human Mortality Database (England \& Wales)
+
 # Data Preparation  -------------------------------------------------------
-# according to what we saw from noisiness in the data in older ages we will be capping the age to 100 
-# since tat high ages the exposure to death becomes really small so the effect of any death would cause a relatively big volatility 
-# introducing noise to the Mortality rate behavier causing us to sample noise instead of mortality 
-#which will have a bad effect when fitting the lee carter.
+# Fit three Lee-Carter specifications: unadjusted SVD on manual Mx, unadjusted SVD on HMD Mx, and Poisson using deaths and exposures.
 
-#I will also fit the lee carter in 3 methods 
-#first: on the manually calculated Mx with no smoothing or graduation preformed on any ages.
-# second: on the pre calculated HMD Mx which will cause an inhertance of the graduation used for all ages above 95 and on some ages above 80 depending on the death counts based on Kannisto assumption
-# so we will basiclly be building a model on top of the Kannisto smoothenes and any resulting 
-#difference between this and the first method would be putrely dur to the Kannisto implementation.
-#third: Poisson/Brouhns on Deaths + Exposures instead of the SVD, I will be using this because the SVD every log-rate is equally reliable — that the errors have constant variance (homoskedasticity) across all ages and years
-#which is wrong since the preciouson of mortality rate estimated by 2000 deathes at age 75 is more reliable than on 3 deathes at age 100, the possion handles that hetroskidastisity. 
-#(AI: because the Poisson distribution has a built-in mean-variance link: its variance equals its mean. A cell with few expected deaths is modelled as having high relative variability, so the likelihood naturally down-weights the uncertain low-count cells and trusts the high-count ones)
-
-# also I will be holding the 2020-2022 years as a testing set instead of a training set and see the effect of the different forcasting models will have on the actual pandamic years(especially on the LSTM)
+# Reserve 2020-2022 as the pandemic stress-test window.
 
 #Fixing the data and shaping it 
-# I will be fitting the lee carter on data from 50-100, I chose 50 so that the most wanted ages which start at 65(since the pricing of longevity bonds depend on those ages) lay comfortable in the middle of the period
-#and are not boundary ages to increase the confidence in our model 
-# also the 2020-2022 years will be held as testing sets(stress-test period) because of the unexpected effects of the covidd-19 which will cause unpredictable noise to the model we are building, and since we don't expect pandamics to happen in life so involving there risk in the longevity bonds is not our main focus.
-#and we will split the years 1950-2019 to 1950-2014 training set and 2015-2019 as a validation set to avoid overfitting.
-# I will also only focus on Ireland Intially 
+# Use ages 50-100, train on 1950-2014, validate on 2015-2019, and stress-test on 2020-2022.
 
 ages_to_fit<-50:100
 years_train<-1950:2014
@@ -700,7 +687,7 @@ sexes <- c("Male", "Female")
 stopifnot(all(D_UK$Year == rep(years_UK, each = length(ages_UK))))
 stopifnot(all(D_UK$Age == rep(ages_UK, times = length(years_UK))))
 
-#create a list to easily dRffrentiate between female and male data 
+#create a list to easily differentiate between female and male data 
 LC_UK <- list()
 
 for (sex in sexes) {
@@ -742,7 +729,7 @@ for (sex in sexes) {
   rownames(manual_mx_matrix) <- rownames(HMD_mx_matrix) <-rownames(D_matrix) <-rownames(E_matrix) <- ages_UK
   colnames(manual_mx_matrix) <- colnames(D_matrix) <-colnames(HMD_mx_matrix) <-colnames(E_matrix) <- years_UK
   
-  #spliting the data
+  #splitting the data
   age_rows <- rownames(manual_mx_matrix) %in% as.character(ages_to_fit)
   
   train_cols <- colnames(manual_mx_matrix) %in% as.character(years_train)
@@ -777,11 +764,11 @@ for (sex in sexes) {
 }
 
 
+# Chapter 4: The Lee-Carter Model
+# Section 4.5: Fitting the Lee-Carter Model
+
 # LEE CARTER Implementation -----------------------------------------------
-# now the first two methods using the SVM
-# I will be using lca with adjust = "none" set up as in deneuit to show the hetroskidastisity effect in the SVM method
-#however it's worth mentioning that in the original lee carter method an adjustment step is introduced at the end where the 
-#values of kappa is adjusted so that the number of deathes matches the actual ones which solves the hetroskidastic problem. and this will be seen in the possion GLM that we will use.
+# Fit the first two specifications by SVD, initially without the second-stage death-matching adjustment.
 ?demography::lca()
 
 #fitting the lee carter
@@ -880,9 +867,9 @@ legend(
 
 max(abs( LC_UK$Female$manual_lca_sett_none$kt - LC_UK$Female$hmd_lca_sett_none$kt), na.rm = TRUE)
 summary( LC_UK$Male$manual_lca_sett_none$kt - LC_UK$Male$hmd_lca_sett_none$kt)
-#we can see that the diiference betwwen the manual and the HMD usage of Mx didn't have a great affect on the kappa-t fitted values of the two models 
-#and that is explain by the explotoraty which established that 99.6 % of the Mx rates with big difference between the two methods where as a result of ages <95 and since 
-#we capped the ages in out model the difference is almost negligible causing the two curves to fall closelly on top of each other with maximum male difference of 0.0007765565.
+#we can see that the difference between the manual and the HMD usage of Mx didn't have a great affect on the kappa-t fitted values of the two models 
+#and that is explain by the exploratory analysis which established that 99.6 % of the Mx rates with big difference between the two methods where as a result of ages <95 and since 
+#we capped the ages in out model the difference is almost negligible causing the two curves to fall closely on top of each other with maximum male difference of 0.0007765565.
 #and female difference of 0.0007421772.
 
 #comparing alpha and beta 
@@ -967,8 +954,11 @@ max(abs( LC_UK$Female$manual_lca_sett_none$bx - LC_UK$Female$hmd_lca_sett_none$b
 #and the same explanation would follow to the bx and alpha x 
 
 
-# Possion and adjusted lee carter -----------------------------------------
-#implementing possion 
+# Chapter 4: The Lee-Carter Model
+# Section 4.5: Fitting the Lee-Carter Model
+
+# Poisson and adjusted lee carter -----------------------------------------
+#implementing Poisson 
 library(StMoMo)
 ?StMoMo
 ?lc()
@@ -1119,11 +1109,11 @@ for (sex in sexes){
 # which isn't sensitive to the method used and should be similar when matching the underlying mortality data and the age ranges in each year. 
 
 # for kappa which represents the overall mortality level in year t, in the three methods we can see the downward trend which indicated the advancement of life expectancy
-# and we can also see a small drift of the SVD lee carter method which doesn't use any adjustment to get closer to the actuall death exposures and that makes sense, since 
-#both adjusted SVD and possion take into considaration the number of deathes occured while building the model. Adjusted SVM tries to match the number of deathes while possion estimates by likelihood using deaths and exposures directly.
+# and we can also see a small drift of the SVD lee carter method which doesn't use any adjustment to get closer to the actual death exposures and that makes sense, since 
+#both adjusted SVD and Poisson take into consideration the number of deaths occurred while building the model. Adjusted SVD tries to match the number of deaths while Poisson estimates by likelihood using deaths and exposures directly.
 
-#as for beta, which measures how sensitive each age is to the time trend kappa we can see that possion has the most observable difference especially in old ages
-#and this is because poisson deals with the low number of deaths and exposures at old ages differently to try to deal with the hetroskadasticity that the svd doesn't deal with directly.
+#as for beta, which measures how sensitive each age is to the time trend kappa we can see that Poisson has the most observable difference especially in old ages
+#and this is because poisson deals with the low number of deaths and exposures at old ages differently to try to deal with the heteroscedasticity that the svd doesn't deal with directly.
 
 # Residual diagnostics ----------------------------------------------------
 # Compute residuals on a common log-mortality scale (since fit and residuals produce different outcomes)
@@ -1279,10 +1269,11 @@ for (sex in sexes) {
       round(old_poi  / mid_poi,  2), "\n")
 }
 
-#Chapter 6
+# Chapter 5: Mortality Forecasting
+# Section 5.1: ARIMA Forecasting of the Period Index
+
 # Using the validation data -----------------------------------------------
-#forcast kappa t using random walk, we explain the arima model here 
-# Using the validation data -----------------------------------------------
+# Forecast kappa_t using the validation data.
 # Forecast kappa_t using a random walk with drift, i.e. ARIMA(0,1,0) with drift:
 library(forecast)
 kappa_methods <- c("svd_none", "svd_dt", "poisson")
@@ -1299,22 +1290,20 @@ for (sex in sexes) {
   LC_UK[[sex]]$kappa_forecast <- list()
   for (m in kappa_methods) {
     kt_ts <- ts(kappa_list[[m]], start = years_train[1], frequency = 1)
-    # sanity check:what would the arima model be
-    #d isn't given a max value beacause d=1 means inongevity shocks are cumulative.and if we set a max we can't compare the models 
+    # Compare the imposed RWD with an automatically selected ARIMA model using d = 1.
     aa <- auto.arima(kt_ts, d = 1, max.p = 3, max.q = 3, seasonal = FALSE,trace=TRUE,allowdrift = TRUE)
     
-    # the model we use is ARIMA(0,1,0) + drift where drift is normal by the construction of forcast and CLT
+    # Fit the ARIMA(0,1,0) model with drift.
     rwd_fit<- Arima(kt_ts, order = c(0, 1, 0), include.drift = TRUE)
     theta_hat<- unname(coef(rwd_fit)["drift"])
     sigma_hat<- sqrt(rwd_fit$sigma2)
     
-    # note the MLE drift of a RWD depends ONLY on the endpoints:
-    # (kappa_T - kappa_1)/(T-1)
+    # Check the fitted drift against the closed-form RWD estimate.
     theta_closed_form <-
       (kappa_list[[m]][years_train_length] - kappa_list[[m]][1]) /
       (years_train_length - 1)
     
-    # forecast through validation (5y) AND stress (3y) in one go: h = 8
+    # Forecast the five validation years and three stress-test years.
     h_total<- years_valid_length + years_stress_length
     fc <- forecast(rwd_fit, h = h_total, level = c(80, 95))
     
@@ -1335,12 +1324,12 @@ for (sex in sexes) {
 }
 
 
-# Forcasting Chapter ------------------------------------------------------
-# Validation forcasting and model choice ----------------------------------
-# (sec 6.1) ARIMA(0,1,0)+drift forecast of kappa_t, validation, LC --------
+# Forecasting Chapter ------------------------------------------------------
+# Validation forecasting and model choice ----------------------------------
+# ARIMA(0,1,0)+drift forecast of kappa_t, validation, LC --------
 library(forecast)
 #ARIMA forecasting of the period index 
-#needed parameterss to be defined 
+# Define model labels and evaluation windows.
 methods <- c("svd_none","svd_dt","poisson")
 method_labels <- c(
   svd_none= "SVD unadjusted",
@@ -1387,22 +1376,16 @@ get_lc_params <- function(sex, method) {
   out
 }
 
-# To insure the consistency between the observed mortality matrix and the extracted fitted parameters
-#we reorder the rows based on age
+# Align mortality matrices and fitted parameters by age.
 align_ages <- function(mat, ages) mat[as.character(ages), , drop = FALSE]
 
-# Defining a function to deal with the log(0) and log(NA) (done before but for consistancy of theis section) 
-# that might arise when taking the log of a matrix
+# Convert mortality rates to finite log rates.
 log_rate_matrix <- function(mx) {
   lm<- log(mx)
   lm[!is.finite(lm)] <- NA
   lm}
 
-# Calculate the implied kappa_t values for the out-of-sample while keeping ax and bx fixed from the training values
-# The implied kappa_t formula is extraced ny minimizing the error using Least-squares
-#   k_t = sum_x b_x (ln m_xt - a_x) / sum_x b_x^2,
-# We will implement the function on each column to maintain the ages and years structures 
-# we will then compare the implied kappa with the forecasted one.
+# Calculate out-of-sample implied kappa_t by least squares with ax and bx fixed.
 kappa_implied <- function(log_obs, ax, bx) {
   apply(log_obs, 2, function(col) {
     temp <- is.finite(col)
@@ -1410,20 +1393,18 @@ kappa_implied <- function(log_obs, ax, bx) {
     sum(bx[temp] * (col[temp] - ax[temp])) / sum(bx[temp]^2)
   })
 }
-# Construct a function to calculate the errors on two scales the  log-mortality and 
-# death-count beacause we are interested in the closest match we will use the Poisson deviance to get the latter since
-# deaths are counts influenced by exposure size.(This might favor the Poisson model so it's used as a secondary method) 
+# Calculate errors on the log-mortality and death-count scales; use Poisson deviance as a secondary metric.
 forecast_errors <- function(log_obs, log_fore, D_obs, E_obs) {
   e    <- log_fore - log_obs
   temp <- is.finite(e)
   mx_obs<- exp(log_obs)
   mx_fc<- exp(log_fore)
   D_fc<- E_obs * mx_fc
-  #to find the error I will only use the records that had valid values to avoid errors
+  # Use valid observations only.
   temp_d<- is.finite(D_obs) & is.finite(D_fc) & E_obs > 0
   d_obs<- D_obs[temp_d]
   d_fc<- D_fc[temp_d]
-  #find the possion deviance where if d_obs =0 the log will cause an undifined value and the deviance woulld be the forcasted
+  # Handle zero observed deaths separately in the Poisson deviance.
   dev_terms<- ifelse(
     d_obs > 0,
     d_obs*log(d_obs/d_fc)-(d_obs-d_fc),
@@ -1431,7 +1412,7 @@ forecast_errors <- function(log_obs, log_fore, D_obs, E_obs) {
   )
   
   c(
-    MAE_log= mean(abs(e[temp])), #only used to compare the errirs without the penelazation for extremes 
+    MAE_log= mean(abs(e[temp])), #only used to compare the errors without the penalization for extremes 
     RMSE_log= sqrt(mean(e[temp]^2)),
     Poisson_deviance = 2 * sum(dev_terms),
     n_cells= sum(temp)
@@ -1444,7 +1425,7 @@ rates_from_kappa<- function(ax, bx, ages, kt_fc_mean, sims_kt, fc_years) {
   #the log mortality construction
   log_mx_hat<- outer(bx, kt_fc_mean) + ax
   dimnames(log_mx_hat) <- list(as.character(ages), as.character(fc_years))
-  #the predicvtion interval
+  #the prediction interval
   pl80<- ph80 <- pl95 <- ph95 <- log_mx_hat
   pl80[]<- ph80[] <- pl95[] <- ph95[] <- NA_real_
   
@@ -1464,10 +1445,8 @@ rates_from_kappa<- function(ax, bx, ages, kt_fc_mean, sims_kt, fc_years) {
   )
 }
 
-# Now we build the forecasts ----------------------------------------------
-# 1. Forecast kappa_t: ARIMA(0,1,0) with drift 
-#following denuit selection the random walk with drift is imposed rather than selected
-#I will run the auto Arima as a robustness check only with d=1 fixed
+# Build the forecasts -----------------------------------------------------
+# Impose the Denuit RWD specification and retain auto-ARIMA as a robustness check.
 for (sex in sexes) {
   #define an empty list to fill
   LC_UK[[sex]]$kappa_forecast <- list()
@@ -1476,24 +1455,23 @@ for (sex in sexes) {
     p<- get_lc_params(sex, m)
     kt_ts<- ts(p$kt, start = min(p$years), frequency = 1)
     
-    # robustness: what would the data choose as a arima model 
+    # Select an ARIMA model from the data for comparison.
     aa <- auto.arima(
       kt_ts, d = 1, max.p = 3, max.q = 3,
       seasonal= FALSE, allowdrift = TRUE, trace = FALSE
     )
-    #the model we will use
+    # Fit the RWD used in the thesis.
     rwd<- Arima(kt_ts, order = c(0, 1, 0), include.drift = TRUE)
     theta<- unname(coef(rwd)["drift"])
     se_theta<- sqrt(rwd$var.coef["drift", "drift"]) # standard error in drift
     sigma<- sqrt(rwd$sigma2) # the size of the future yearly random shocks ε
-    # Maximum likelihood for the  drift result in it depending only on the endpoints
+    # Check the maximum-likelihood drift against the endpoint estimate.
     theta_cf <- (p$kt[length(p$kt)] - p$kt[1]) / (length(p$kt) - 1)
     fc <- forecast(rwd, h = length_fc, level = c(80, 95))
     
-    #produce the 10000 paths instead of the the central kappa alone 
-    # kappa_{T+h} = kappa_T + h*theta + sigma * sum_{j<=h} eps_j
+    # Simulate 10,000 kappa paths from the fitted RWD.
     kt_last<- p$kt[length(p$kt)]
-    theta_sim<- rnorm(n_sim, mean = theta, sd = se_theta) #drift simulations per path , uncertainity in the true average annual change in κ
+    theta_sim<- rnorm(n_sim, mean = theta, sd = se_theta) #drift simulations per path , uncertainty in the true average annual change in κ
     eps <- matrix(rnorm(n_sim * length_fc, 0, sigma), n_sim, length_fc) # epsilon simulation, yearly shocks, per path per year
     sims<- kt_last + outer(theta_sim, seq_len(length_fc)) + t(apply(eps, 1, cumsum))
     colnames(sims) <- as.character(years_fc)
@@ -1520,7 +1498,7 @@ for (sex in sexes) {
 # Comment:the results show a really close drift values for both males and females
 #suggesting that estimated long-term downward trend kappa is independent of the sex and modelling methods
 
-# Comment:we can see that none of the suto arimas gave the (0,1,0) result, it prefered a more short term dynamic
+# Comment:we can see that none of the auto arimas gave the (0,1,0) result, it preferred a more short term dynamic
 #higher orders of autoregressive and moving-average were used.
 
 # we reconstruct the forecasted log-mortality for all ages 
@@ -1533,7 +1511,7 @@ for (sex in sexes) {
       ax= p$ax, bx= p$bx, ages= p$ages, kt_fc_mean= kf$kt_fc, sims_kt= kf$sims,fc_years= years_fc
     )}}
 LC_UK$Female$forecast_lm
-#extract the observed mortality rates (manually computed) in addition to deathes and exposures 
+#extract the observed mortality rates (manually computed) in addition to deaths and exposures 
 obs_data <- list()
 for (sex in sexes) {
   ages_sex <- get_lc_params(sex, "svd_none")$ages
@@ -1619,7 +1597,7 @@ metrics_tab<- do.call(rbind, metrics_rows)
 prediction_tab<- do.call(rbind, prediction_rows)
 kappa_tab<- do.call(rbind, kappa_rows)
 
-#checking if there is any otliers 
+#checking if there is any outliers 
 log_error_rows<-list()
 for(sex in sexes){
   for(m in methods){
@@ -1737,7 +1715,7 @@ for (sex in sexes) {
       xlab = "Year", ylab = expression(kappa[t]),
       main = paste0(method_labels[m], " - ", sex)
     )
-    #forcasted kappa confidance intervals
+    #forecasted kappa confidence intervals
     polygon(c(years_fc, rev(years_fc)), c(lo95, rev(hi95)),
             col = rgb(0, 0, 0.5, 0.15))
     polygon(c(years_fc, rev(years_fc)), c(lo80, rev(hi80)),
@@ -1917,54 +1895,44 @@ rmse_comparison <- merge(overall_valid,
                          sort = FALSE)
 
 
-# LTSM Implementation -----------------------------------------------------
+# Chapter 5: Mortality Forecasting
+# Section 5.2: LC-LSTM Based Forecasting
+
+# LSTM Implementation -----------------------------------------------------
 library(keras3) 
 library(tseries) #ADF and Jarque-Bera tests
-#needed values
-# the benchmark we choose from the previous section is th poisson 
+# Use the Poisson Lee-Carter fit as the forecasting benchmark.
 benchmark_method <- "poisson"
 lstm_lc_method <- benchmark_method
 
-# the paper uses Lag j = 1, so k_t = f_LSTM(k_{t-1}) + gamma_t
-#we will follow the same structure as the paper and if we had time we will do a 
-#sensitivity analysis for lag_grid <- 1:5 --> higher computational cost 
-#the time lag j=1 also produces similar structure to the RWD making the comarison more easy and straight forward
-#Both produce the next annual value from the previous annual value, but the random walk imposes a constant drift
-#whereas the LSTM learns the relationship
+# Tune the LC-LSTM over lags 1-5; lag 1 matches the one-step structure used in the reference paper.
 lag_grid <- 1:5
 
-# Grid search space, section 6.2, p.9. The paper fixes P = 1 hidden
-# layer, ReLU feedforward activation, tanh recurrent activation, linear
-# output activation, and lets the number of hidden neurons vary by
-# country and gender. The specific grid values are not reported.
+# Tune the hidden units and learning rate for the single-layer reference architecture.
 units_grid <- c(4, 8, 16, 32, 45) #number of neurons in the hidden layer
 lr_grid <- c(0.05 ,0.01, 0.005, 0.001) 
-#for computational complexity I will use train and test split instead of rolling-origin validation
-#but i will use the rolling-origin validation in the sensitivity analysis to check if the choice and accuracy would differe
+# Use a fixed subtraining-validation split for hyperparameter tuning.
 train_split  <- 0.85        # 85% subtraining and the rest are validation
 n_epochs<- 500 #the data can enter fully 500 times 
-patience<- 50 # we will wait for 50 consective times with no improvement to early stop the training
-batch_size<- 9  # it will reweigth 6 times within each train 
+patience<- 50 # we will wait for 50 consecutive times with no improvement to early stop the training
+batch_size<- 9  # it will reweight 6 times within each train 
 
 # Bagging The paper uses B = 1000
 B_boot<- 500
 boot_epochs <- 250
 boot_refit<- "poisson"
-boot_type<- "deviance" # resample deviance residuals and then get the deathes out of them 
+boot_type<- "deviance" # resample deviance residuals and then get the deaths out of them 
 
 alpha_level<- 0.05       # for 95%PI
 z_alpha<-qnorm(1 - alpha_level / 2) #critical value 
 
-#the paper is being indecisive here it says The noise is projected over the horizon "through a random walk
-# representation" meaning that the accumulated noise variance is h proportional(each future year introduces a new random shock), but the equations don't show any h involved
-# I will be using the random walk presentation of 
+# Accumulate forecast noise through a random-walk representation.
 noise_random_walk <- TRUE
 base_seed <- 20260727
 
 # functions that will be needed
 
-#neural networks are sensitive to scaling so I will scale the training kappa's
-#and then I will reverse the scaling on the forecasted kappa's
+# Standardise kappa for training and reverse the scaling after forecasting.
 std_fit <- function(x) {list(mean = mean(x),sd   = sd(x))}
 std_apply <- function(x, s) {(x - s$mean) / s$sd}
 std_inv <- function(z, s) {z * s$sd + s$mean}
@@ -1979,8 +1947,7 @@ make_lagged <- function(z,lag) { #we will get the lagged values in x and the cor
        n = n)
 }
 ?keras_model_sequential
-# Architecture of section 6.2 following the paper is one hidden LSTM layer, ReLU, 
-#feedforward activation, tanh recurrent activation, linear output.
+# Use one LSTM layer with ReLU activation, tanh recurrence, and a linear output layer.
 build_lstm <- function(lag, units, lr) {
 # 1L means one feature at each year: kappa
 model<-keras_model_sequential(input_shape=c(lag,1L))
@@ -1989,7 +1956,7 @@ model<-keras_model_sequential(input_shape=c(lag,1L))
       activation = "relu", recurrent_activation = "tanh"))
   # output layer
   model$add(layer_dense(units = 1L,activation = "linear"))
-  # the training procedure and upates
+  # the training procedure and updates
   model$compile(optimizer = optimizer_adam(learning_rate = lr),
     loss = "mse")
   return(model)
@@ -2036,18 +2003,14 @@ dagostino_pearson_test<-function(x) {
   A <- 6+ (8/sb1)*(2/sb1+sqrt(1+ 4/sb1^2))
   Z2<-((1-2/(9*A)) - ((1- 2/A)/(1+Xk*sqrt(2/(A-4))))^(1/3))/sqrt(2/(9*A))
   
-  K2 <- Z1^2 + Z2^2 # the combined test statistic  with two degrees of freedemon since we have 2 summed values
+  K2 <- Z1^2 + Z2^2 # the combined test statistic  with two degrees of freedom since we have 2 summed values
   list(statistic = K2, 
        p.value = pchisq(K2, df = 2, lower.tail = FALSE),
        Z_skew = Z1, 
        Z_kurt = Z2)
 }
 
-# bagging scheme
-# okay so here we resample from the poisson deviance then we recalculate the D_hat while
-#the observed death is the same. the paper uses Newton–Raphson I will use bisection to find the D_hat
-#to introduce more stability and restrict the solution into one instead of the two mentioned in the paper 
-# the possion deviance has the following structure  dev(D*, D) = 2[D log(D/D*) - (D - D*)] = r*^2
+# Reconstruct bootstrap deaths from resampled Poisson deviance residuals using bisection.
 invert_deviance<-function(r_star,D_obs,iter=60){
   target<-r_star^2
   lo<-ifelse(r_star>0,1e-10,D_obs)
@@ -2108,10 +2071,7 @@ bootstrap_kappa <- function(D,E,ax,bx,kt,ages,years,
   as.numeric(f$kt[1, ])
   }
 
-#2.2: Splits
-#training and testing sets are as previously then we split TR to
-#85-15 into TR_sub and VS for the grid search, so the
-#testing years are never used for tuning.
+# Split the training window 85:15 for tuning without using the test years.
 lstm_setup<-list()
 for (sex in sexes) {
   p<-get_lc_params(sex, lstm_lc_method)
@@ -2136,16 +2096,15 @@ for (sex in sexes) {
     min(years_fc), max(years_fc))
 }
 
-# from the papers experience at least 40 observations are needed to tune the
-# network. out TR here has 65, so the requirement is met.
+# The 65-year training window exceeds the reference paper's 40-observation minimum.
 #Grid search on TR_sub
 grid_rows<-list()
 lstm_best<-list()
 
 for(sex in sexes){
   st<-lstm_setup[[sex]]
-  scaler_tune<-std_fit(st$kt[seq_len(st$n_train_sub)]) #only use the sub training data to find mean and variance so noleakage incolced
-  z_tune<-std_apply(st$kt,scaler_tune) #then we apply on all training data sun and valdation sub
+  scaler_tune<-std_fit(st$kt[seq_len(st$n_train_sub)]) #only use the sub training data to find mean and variance so no leakage involved
+  z_tune<-std_apply(st$kt,scaler_tune) #then we apply on all training data sun and validation sub
   best<-list(mse=Inf)
   for(lag in lag_grid){
     d<-make_lagged(z_tune,lag)
@@ -2225,7 +2184,7 @@ sd(female_kappa)
 range(female_kappa)
 diff(range(female_kappa))
 
-#Step 1: use the best network on the full TR, point forecasts on h
+# Refit the selected network on the full training window and forecast h steps.
 h_total<-length(years_fc)
 for(sex in sexes){
   st<-lstm_setup[[sex]]
@@ -2256,12 +2215,12 @@ for(sex in sexes){
     shuffle=FALSE,verbose=0
   )
   
-  #forcasting the future years kappa and unscalling it 
+  #forecasting the future years kappa and unscaling it 
   w <-z_final[(length(z_final)-best_hp$lag+1):length(z_final)]
   kt_fc_scaled<-recursive_kappa(model,w,h_total)
   kt_fc<-std_inv(kt_fc_scaled,scaler_final)
   
-  #retriving the fitted kappas and unscalling them 
+  #retrieving the fitted kappas and unscaling them 
   fit_in_scaled<-as.numeric( predict(model,x_all,verbose=0))
   fit_in<-std_inv(
     fit_in_scaled,
@@ -2274,7 +2233,7 @@ for(sex in sexes){
   #calculate the noise for the fitted 
   noise_in<-actual_in-fit_in
   
-  #difference between impliead and forcasted kappa 
+  #difference between implied and forecasted kappa 
   kt_implied_fc=LC_UK[[sex]]$kappa_implied_oos$poisson
   forecast_error<-kt_implied_fc-kt_fc
   
@@ -2348,8 +2307,11 @@ print(transform(
   ADF_p=round(ADF_p,5)
 ),row.names=FALSE)
 
-#Comment: all of the tests fails to reject the normality assumptions of gamma also the ADF fail to reject the unit-root null for the noise-level series, so our assumption of a random walk is consistant
+#Comment: all of the tests fails to reject the normality assumptions of gamma also the ADF fail to reject the unit-root null for the noise-level series, so our assumption of a random walk is consistent
 #The estimated innovation standard deviation is larger for females than for males, indicating greater unexplained year-to-year variation in the female period-index residuals.
+
+# Chapter 5: Mortality Forecasting
+# Section 5.2: LC-LSTM Based Forecasting
 
 #bagging
 # Koissi bootstrap and network ensemble
@@ -2482,7 +2444,7 @@ for (sex in sexes) {
   )
 }
 
-# Bagged mean and variance for lTSM
+# Bagged mean and variance for LSTM
 for(sex in sexes){
   st<-lstm_setup[[sex]]
   bp<-st$boot$pred
@@ -2526,6 +2488,9 @@ for(sex in sexes){
       "| RWD:", round(sqrt(LC_UK[[sex]]$rwd_matched$var_khat[h_total]), 3), "\n")
 }
 
+# Chapter 5: Mortality Forecasting
+# Section 5.2: LC-LSTM Based Forecasting
+
 # Mortality rates and prediction intervals
 log_m_bounds<-function(ax,bx,k_lo,k_hi){
   lower_candidate<-outer(bx,k_lo)+ax
@@ -2535,7 +2500,7 @@ log_m_bounds<-function(ax,bx,k_lo,k_hi){
     hi=pmax(lower_candidate,upper_candidate)
   )
 }
-#For the LTSM 
+#For the LSTM 
 for(sex in sexes){
   st<-lstm_setup[[sex]]
   pi<-st$pi
@@ -2555,7 +2520,7 @@ for(sex in sexes){
     years=years_fc
   )
 }
-#for lee carter RANDOM WALK with bootstrab
+#for lee carter RANDOM WALK with bootstrap
 for (sex in sexes) {
   st  <- lstm_setup[[sex]]
   rwd <- LC_UK[[sex]]$rwd_matched
@@ -2590,7 +2555,7 @@ for (sex in sexes) {
 }
 
 #Performance metrics
-#some function to ease the pprocess
+#some function to ease the process
 rmse_func<-function(obs,pred){
   keep<-is.finite(obs)&is.finite(pred)
   if(!any(keep))return(NA_real_)
@@ -2682,6 +2647,9 @@ print(transform(
   PICP_m_q=round(PICP_m_q,3),
   MPIW_m_q=round(MPIW_m_q,3)
 ),row.names=FALSE)
+
+# Chapter 5: Mortality Forecasting
+# Section 5.3: Comparison of Forecasting Approaches
 
 # Plots
 old_par<-par(no.readonly=TRUE)
@@ -3014,7 +2982,7 @@ for(sex in sexes){
 # RWD and LSTM are first compared on the validation window.
 # RWD is selected as the main pricing model.
 # Both mortality surfaces are then extended to age 120.
-# The LTSM is retained for sensitivity analysis.
+# The LSTM is retained for sensitivity analysis.
 #comparing RWD and LSTM based only upon the bootstrapping
 benchmark_method<-"poisson"
 forecast_models<-c("RWD","LSTM")
@@ -3077,65 +3045,42 @@ get_ts_objects<-function(sex,ts_model){
 }
 save.image("workspace.RData")
 
-# CHAPTER 7 - LONGEVITY-BOND PRICING
-# Selected mortality model: Poisson Lee-Carter + random walk with drift
-# Primary thesis route:
-#   Apply alpha_h = lambda * sqrt(h) to the Gaussian Lee-Carter period index.
-#   This is equivalent to changing the RWD drift from theta to
-#   theta_Q = theta - lambda * sigma and gives one consistent path measure.
-# Reference benchmark:
-#   Apply a constant Wang parameter separately to every survival-index cash
-#   flow, as in Denuit, Devolder and Goderniaux (2007). This benchmark is not
-#   the same construction as the process-level thesis route.
-#
-# lambda is calibrated to real market annuity quotes. Mercer Ireland historical
-# annuity rates are used as a proxy for the UK, because UK quotes on the same
-# terms were not available. The quote gives the annual pension purchasable with
-# a fund of 100,000, age 65, single life, payable monthly in advance, with a
-# 5-year guarantee, 2% commission and 0% escalation; the interest rate is as at
-# the commencement date. The reference annuity value used in calibration is built
-# on exactly these cash flows so that the calibrated alpha reflects the mortality
-# basis difference alone.
-#
-# Required objects from the earlier chapters:
-#   LC_UK, sexes, ages_to_fit, get_lc_params()
-# Required packages:
-#   StMoMo, forecast, readxl
-# =============================================================================
+# Chapter 6: Longevity Bond Pricing
+# Section 6.2: Monte Carlo Pricing under the Martingale Measure
+
+# Use Poisson Lee-Carter with an RWD for pricing.
+# Apply the primary Wang adjustment to kappa_t and retain the maturity-wise routes as benchmarks.
+# Calibrate lambda to the Irish annuity quotes using matching product cash flows.
+# Requires LC_UK, sexes, ages_to_fit, get_lc_params(), StMoMo, forecast, and readxl.
 library(StMoMo)
 library(forecast)
-# 7.0 settings 
+# Settings
 required_objects<-c("LC_UK","sexes","ages_to_fit","get_lc_params")
 price_lc_method<-"poisson"
-#the selected Poisson Lee-Carter model is refitted on all pre-COVID observations.The implied issue year is 2020.
+# Refit the selected model on all pre-COVID observations for a 2020 issue year.
 price_fit_source<-"refit_pre_covid"
 price_fit_years<-1950:2019
 x0_cohort<-65
-#extending the table at limiting age 125, following Denuit q_125=1.
+# Extend the table to limiting age 125 with q_125 = 1.
 age_terminal<-125
 T_bond<-25
 coupon<-1
 principal<-1 # retained to mirror Denuit et al.'s bond cash flow. it won't effect anything as it will cancel out from both
-#normal bond and mortality bond we can have a bigger number.
+# Set the bond and simulation horizons.
 closure_model<-"kannisto"
 closure_band<-85:100
 closure_anchor<-TRUE #to match the lee carter 
 n_sim_price<-10000
 seed_price<-20260820
-# the calibrated CDF-Wang parameter alpha_cdf is signed: its sign is set by the
-# data, not assumed.
-# The signed process multiplier lambda_proc=-alpha_cdf drives all
-# pricing; lambda_abs is its reported magnitude. Use "market_annuity" to calibrate 
-# from the Mercer quotes.
+# Let the data determine the sign of alpha_cdf and use lambda_proc = -alpha_cdf for pricing.
 lambda_source<-"market_annuity"
-# Mercer ireland annuty quota (UK proxy) 
+# Irish annuity quote used as the UK proxy.
 mercer_file<-"/Users/ramaarafat/Documents/MSc thesis/data/Rates to send_hardcoded.xlsx"
 mercer_sheet<-"Sheet1"
-#commencement date of the annuity used for calibration. It must lie in the
-#issue year so that the annuity basis and the pricing origin coincide.
+# Match the annuity commencement date to the pricing origin.
 annuity_commencement_date<-as.Date("2020-01-01")
 mercer_sex_column<-setNames(sexes,sexes) # "Male"->"Male", "Female"->"Female"
-# product terms and assumption of the Mercer quote.
+# Set the quoted annuity product terms.
 annuity_fund<-100000
 annuity_commission<-0.02    
 annuity_payment_freq<-12
@@ -3145,22 +3090,20 @@ annuity_escalation<-0
 annuity_age<-65
 annuity_singlelife<-TRUE
 apply_commission_to_fund<-TRUE
-# Bank of England nominal spot curve.The interest rate is taken as at the commencement
-# date, matching the annuity assumption.
+# Use the Bank of England nominal spot curve at the issue date for bond pricing.
 boe_file<-"/Users/ramaarafat/Documents/MSc thesis/code/glcnominalddata/GLC Nominal daily data_2016 to 2024.xlsx"
 boe_sheet<-"4. spot curve"
-# Discount curve used for the ANNUITY CALIBRATION only. Set to
-# "ecb_eur" to price the annuity on the ECB AAA euro-area spot curve.
+# Use the ECB euro spot curve for annuity calibration.
 annuity_discount_source<-"ecb_eur"
 ecb_aaa_source <- read.csv("/Users/ramaarafat/Documents/MSc thesis/data/data.csv",,stringsAsFactors=FALSE)
 
-#rounding function for data franes for easiness
+# Round numeric data-frame columns for reporting.
 round_numeric_df<-function(x,digits=6){
   numeric_columns<-vapply(x,is.numeric,logical(1))
   x[numeric_columns]<-lapply(x[numeric_columns],round,digits=digits)
   x}
 
-# 7.1 fit and random walk parameters
+# Fit the pricing model and estimate its RWD parameters.
 fit_lc_poisson<-function(sex,yrs,ages_fit=ages_to_fit){
   D<-LC_UK[[sex]]$D_full[as.character(ages_fit),as.character(yrs),drop=FALSE]
   E<-LC_UK[[sex]]$E_full[as.character(ages_fit),as.character(yrs),drop=FALSE]
@@ -3220,10 +3163,13 @@ attained_ages<-x0_cohort+h_seq_price
 mortality_years<-issue_year+h_seq_price-1
 payment_years<-issue_year+h_seq_price
 
+# Chapter 6: Longevity Bond Pricing
+# Section 6.3: Calibration of the Wang Parameter $\lambda$
+
 # market input and discount curve
 curve_target_date<-annuity_commencement_date
 
-#extract the quoted annual pension from mercer at the begining date for each sex block.
+# Extract the quoted annual pension at the commencement date by sex.
 read_mercer_quote<-function(){
   raw<-as.data.frame(readxl::read_excel(mercer_file,sheet=mercer_sheet,skip=4,col_names=FALSE))
   blocks<-list(Male=c(1,3),Female=c(5,7),GenderNeutral=c(9,11))
@@ -3265,7 +3211,7 @@ for(sex in sexes){
   annuity_quote_date[sex]<-q$date
   }
 
-# Bank of England nominal spot curve at issuing date
+# Build the Bank of England spot curve at the issue date.
 boe_spot_all<-as.data.frame(readxl::read_excel(boe_file,sheet=boe_sheet,skip=3))
 names(boe_spot_all)[1]<-"date"
 boe_spot_all$date<-as.Date(boe_spot_all$date)
@@ -3295,7 +3241,7 @@ max(boe_maturity)
 min(boe_maturity)
 
 boe_spot_cc<-boe_spot_pct/100 #from percentage to decimals 
-#extract the yearly spot rates then hold flat to the extra years 
+# Extract annual spot rates and hold the curve flat beyond the published maturities.
 annual_rates<-boe_spot_cc[seq(1,length(boe_maturity),by=2)]
 spot_cc_curve<-annual_rates[pmin(h_seq_price,length(annual_rates))]
 disc_curve<-exp(-spot_cc_curve*h_seq_price)
@@ -3306,8 +3252,7 @@ boe_discount_curve<-data.frame(maturity=h_seq_price,spot_pct=100*spot_cc_curve,s
   discount_factor=disc_curve,extrapolated=h_seq_price>boe_last_maturity,
   row.names=NULL)
 
-#now the ECB AAA euro-area spot curve used for the calibrattion. spot_cc_curve_annuity is used
-# only inside Section 7.5.
+# Build the ECB AAA euro-area spot curve used only for annuity calibration.
 read_ecb_spot_curve<-function(source){
   raw<-source
   # keep pure whole-year spot rates SR_1Y..SR_nY only.
@@ -3327,8 +3272,7 @@ read_ecb_spot_curve<-function(source){
 
 ecb_spot<-read_ecb_spot_curve(ecb_aaa_source)
 
-#same as before we pick the nearest date carrying a complete
-# 1..T_bond year curve.
+# Select the nearest prior date carrying a complete curve.
 by_date<-split(ecb_spot[,c("maturity","spot_pct")],ecb_spot$date)
 need_maturities<-seq_len(T_bond)
 eligible_dates<-as.Date(names(by_date))
@@ -3343,7 +3287,7 @@ chosen<-by_date[[as.character(ecb_curve_date)]]
 chosen<-chosen[order(chosen$maturity),,drop=FALSE]
 ecb_maturity<-chosen$maturity
 ecb_spot_cc<-chosen$spot_pct/100
-# rule=2 holds the curve flat beyond the last published. Can't use the same method as before since it can't be proofed to be 
+# Hold the curve flat beyond the last published maturity.
 spot_cc_curve_annuity<-approx(x=ecb_maturity,y=ecb_spot_cc,xout=h_seq_price,
                               method="linear",rule=2,ties="ordered")$y
 annuity_curve_date<-ecb_curve_date
@@ -3364,7 +3308,10 @@ print(data.frame(sex=sexes,quote_date=annuity_quote_date[sexes],
                 annuity_price_per_unit=as.numeric(market_annuity_price[sexes]),row.names=NULL
                 ))
 
-# 7.2 real Kappa paths
+# Chapter 6: Longevity Bond Pricing
+# Section 6.2: Monte Carlo Pricing under the Martingale Measure
+
+# Simulate real-world kappa paths.
 sim_kappa_P<-function(rw,H,eps){
   n<-nrow(eps)
   cumulative_eps<-t(apply(eps,1,cumsum))
@@ -3379,15 +3326,14 @@ for(sex in sexes){
   pricing[[sex]]$kappa_P<-kappa_P
   pricing[[sex]]$kappa_central<-pricing[[sex]]$rwd$kt_last+h_seq_price*pricing[[sex]]$rwd$theta
 }
-# 7.3 old-age extended
-#I will define those again just in-case
+# Extend mortality beyond age 100.
 logit_f<-function(p) log(p/(1-p))
 expit_f<-function(z) 1/(1+exp(-z))
-# We extended the surface having kappa fixed 
+# Fit the Kannisto closure for each fixed kappa value.
 closure_logm<-function(ax,bx,kappa,age_out,band,model,anchor){
   band_names<-as.character(band)
   logm_band<-outer(as.numeric(bx[band_names]),kappa)+as.numeric(ax[band_names])
-  #using kannisto mortality smootheness
+  #using kannisto mortality smoothness
   mu_band<-exp(logm_band)
   #to avoid exploding,use lower and upper floor away from 0 and 1 
   mu_band<-pmin(pmax(mu_band,1e-12),1-1e-12)
@@ -3406,7 +3352,10 @@ closure_logm<-function(ax,bx,kappa,age_out,band,model,anchor){
     linear_predictor
   }
 }
-# 7.4 survival under P for those birn in the same year --> cohort 
+# Chapter 6: Longevity Bond Pricing
+# Section 6.4: Survival Probabilities and Term Structure
+
+# Calculate cohort survival under P.
 cohort_survival<-function(ax,bx,ages_fit,kappa_paths,mortality_ages,
                           mortality_years,payment_years,terminal_age,
                           band,model,anchor){
@@ -3471,9 +3420,10 @@ for(sex in sexes){
   cat(sex) 
   print(round(out,6),row.names=FALSE)}
 
-# 7.5 find Wang parameter𝜆that makes Lee–Carter survival reproduce the price the market actually charges for an annuity
-#using survival way of describing the sample 
-#since we don't have the distribution of the survival propabilities then we construct an empirical weighting that is right tailed 
+# Chapter 6: Longevity Bond Pricing
+# Section 6.3: Calibration of the Wang Parameter $\lambda$
+
+# Define empirical Wang weights for simulated survival probabilities.
 wang_weights_upper<-function(n,alpha){
   u<-1-(0:n)/n #n+1 points and desending matching the survival way
   weights<- -diff(pnorm(qnorm(u)+alpha)) #diff result in n points #minus to define the weights as positive
@@ -3490,20 +3440,17 @@ wang_mean_upper<-function(x,alpha){
   wang_mean_upper_sorted(sort(x),alpha)
 }
 
-# to compare in the same since as daunit I will use the q CDF instead of the survival function meaning that alpha will be negative to correspond to extra risk 
+# Apply the Wang transform to the death-probability CDF following Denuit.
 wang_survival_curve<-function(p_ann,alpha_cdf){
   q<-1-p_ann
   qstar<-q
   interior<-q>0&q<1
   qstar[interior]<-pnorm(qnorm(q[interior])+alpha_cdf)
-  1-qstar # get the disorted survavil 
+  1-qstar # get the distorted survival 
 }
 
-# Mercer Annuity value: single life, payable m-thly in advance, with a level guarantee period and 0% escalation. 
-# within-year survival is obtained by log-linear interpolation because it matches the fixed year survival assumption(same survival for the same lexis diagram),
-# and payments during the guarantee period are
-# certain. The value is per unit of annual payment, so it is directly
-# comparable with fund*(1-commission)/annual_pension.
+# Value the quoted single-life annuity with monthly advance payments, a level guarantee, and no escalation.
+# Interpolate survival log-linearly within each year and treat guaranteed payments as certain.
 annuity_value<-function(surv_cum,disc_cc,horizon_years,freq,timing,guarantee_years){
   H<-length(surv_cum)
   if(length(disc_cc)!=H){
@@ -3539,9 +3486,7 @@ annuity_value_wang<-function(surv_cum,alpha_cdf,disc_cc,horizon_years,freq,
   annuity_value(surv_star,disc_cc,horizon_years,freq,timing,guarantee_years)
 }
 
-#market annuity cheaper than the Lee-Carter reference implies alpha_cdf>0 (survival deflated); a more conservative market
-#basis implies alpha_cdf<0, as in Denuit et al. The discount curve is passed in explicitly to the euro.
-#we find the root now 
+# Solve for alpha_cdf using the selected annuity discount curve.
 calibrate_alpha_from_annuity<-function(p_ann,target_price,
                                        disc_cc=spot_cc_curve_annuity,
                                        interval=c(-3,3)){
@@ -3561,7 +3506,7 @@ calibrate_alpha_from_annuity<-function(p_ann,target_price,
   uniroot(f,interval=interval,tol=1e-10)$root
 }
 
-#now we implement the alpha calibration by distorting the reference survival curve (CDF-Wang) using the functions previously mentioned
+# Calibrate alpha_cdf by distorting the reference survival curve.
 lambda_proc<-setNames(numeric(length(sexes)),sexes)
 lambda_calibration_table<-NULL
 calibration_rows<-list()
@@ -3599,7 +3544,10 @@ print(data.frame(sex=sexes,source=lambda_source,
                  row.names=NULL))
 print(round_numeric_df(lambda_calibration_table,8),row.names=FALSE)
 
-# 7.6 applying the wang with the calibrated lambda
+# Chapter 6: Longevity Bond Pricing
+# Section 6.2: Monte Carlo Pricing under the Martingale Measure
+
+# Apply the Wang transform using the calibrated lambda.
 # Process route
 shift_kappa_Q<-function(kappa_P,rw,lambda){
   H<-ncol(kappa_P)
@@ -3643,7 +3591,10 @@ for(sex in sexes){
 }
 pricing$Female
   
-# 7.7 pricing the bond and the additive margin k-tilda is the discounted average of that gap
+# Chapter 6: Longevity Bond Pricing
+# Section 6.5: The Relative Additive Margin
+
+# Price the bond and calculate the relative additive margin.
 relative_additive_margin<-function(rho,p_ref,disc,maturity){
   h<-seq_len(maturity)
   sum(disc[h]*(rho[h]-p_ref[h]))/sum(disc[h])
@@ -3669,8 +3620,11 @@ price_standard_LB<-function(expected_survival,disc,maturity,notional=1){
 
 standard_LB_path_values<-function(survival_paths,disc,maturity,notional=1){
   h<-seq_len(maturity)
-  as.numeric(notional*survival_paths[,h,drop=FALSE]%*%disc[h]) #to fins the sd and distribution
+  as.numeric(notional*survival_paths[,h,drop=FALSE]%*%disc[h]) #to finds the sd and distribution
 }
+
+# Chapter 7: Empirical Results
+# Section 7.3: Bond Pricing Results
 
 bond_rows<-list()
 for(sex in sexes){
@@ -3721,7 +3675,10 @@ bond_table<-do.call(rbind,bond_rows)
 cat("\n--- Chapter 7 bond-pricing summary ---\n")
 print(round_numeric_df(bond_table,6),row.names=FALSE)
 
-# 7.8 term structure
+# Chapter 7: Empirical Results
+# Section 7.2: Forecasting Results
+
+# Calculate the survival term structure.
 term_rows<-list()
 for(sex in sexes){
   pr<-pricing[[sex]]
@@ -3744,6 +3701,9 @@ for(sex in sexes){
 }
 term_table<-do.call(rbind,term_rows)
 print(round_numeric_df(term_table[term_table$h%%5==0,],6),row.names=FALSE)
+
+# Chapter 7: Empirical Results
+# Section 7.4: Term Structure of the Risk Margin
 
 margin_shape_rows<-list()
 for(sex in sexes){
@@ -3790,8 +3750,10 @@ for(sex in sexes){
 pathunc_split<-do.call(rbind,pathunc_rows)
 print(round_numeric_df(pathunc_split,6),row.names=FALSE)
 
-# 7.9 lambda and r(t) sensitivity
-#for the synsetivity if I had extra time 
+# Chapter 7: Empirical Results
+# Section 7.4: Term Structure of the Risk Margin
+
+# Evaluate sensitivity to lambda and the discount curve.
 lambda_grid<-c(-1.00,-0.75,-0.50,-0.25,0,0.25,0.50,0.75,1.00)
 run_lambda_sensitivity<-TRUE
 spot_shift_grid<-c(-0.01,-0.005,0,0.005,0.01)
@@ -3850,7 +3812,10 @@ rate_sensitivity<-do.call(rbind,rate_rows)
 cat("\n--- Sensitivity to parallel sterling spot-curve shifts ---\n")
 print(round_numeric_df(rate_sensitivity,6),row.names=FALSE)
 
-# 7.10 plots
+# Chapter 7: Empirical Results
+# Section 7.1: Lee-Carter Calibration Results
+
+# Plots
 # Kannisto closure continuity check
 par(mfrow=c(1,length(sexes)))
 for(sex in sexes){
@@ -3869,6 +3834,9 @@ for(sex in sexes){
        pos=4,cex=0.7,col="red")
 }
 par(mfrow=c(1,1))
+
+# Chapter 7: Empirical Results
+# Section 7.2: Forecasting Results
 
 old_par<-par(no.readonly=TRUE)
 par(mfrow=c(1,length(sexes)))
@@ -3899,6 +3867,9 @@ for(sex in sexes){
   cat(sex,"max width difference:",max(abs(w_P-w_Q)),"\n")
 }
 
+# Chapter 7: Empirical Results
+# Section 7.2: Forecasting Results
+
 par(mfrow=c(1,length(sexes)))
 for(sex in sexes){
   tm<-pricing[[sex]]$term
@@ -3921,6 +3892,9 @@ for(sex in sexes){
 
 for(sex in sexes) 
   cat(sex, 65 + which.max(pricing[[sex]]$EQ - pricing[[sex]]$EP), "\n")
+
+# Chapter 7: Empirical Results
+# Section 7.4: Term Structure of the Risk Margin
 
 par(mfrow=c(1,1))
 if(run_lambda_sensitivity){
@@ -3954,4 +3928,3 @@ for(sex in sexes){
          legend=c("Process-level","Maturity-wise sqrt(h)","Denuit constant"),
          col=c("navy","darkorange3","grey45"),lty=c(1,2,3),lwd=c(2.5,1.5,1.5))
 }
-
