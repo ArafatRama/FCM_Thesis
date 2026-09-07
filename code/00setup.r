@@ -1,10 +1,12 @@
-#pulling the data
+# Chapter 4: The Lee-Carter Model
+# Section 4.4: The Data: Human Mortality Database 
+# Importing the data from the HMD website
 library(HMDHFDplus)
 readRenviron("~/.Renviron")
-hmd_username <- Sys.getenv("HMD_USERNAME")
-hmd_password <- Sys.getenv("HMD_PASSWORD")
-# ONE test pull: England & Wales, single-age single-year death rates
-mx <- readHMDweb(CNTRY = "GBRTENW", item = "Mx_1x1",
+hmd_username<- Sys.getenv("HMD_USERNAME")
+hmd_password<- Sys.getenv("HMD_PASSWORD")
+# One test pull: England & Wales, single-age single-year death rates
+mx<-readHMDweb(CNTRY = "GBRTENW", item = "Mx_1x1",
                  username =hmd_username, password = hmd_password)
 
 str(mx)
@@ -12,92 +14,70 @@ range(mx$Year)     # earliest and latest year HMD actually has
 range(mx$Age)      # age range
 head(mx)
 
-#Now I need to get the data that I want 
+# Construct the limited data frame needed
 print(getHMDitemavail("GBRTENW"),n=86) # to check all the data the hmd offers
 
-# we pull the period data that we need (we don't look at cohort data)
-country    <- "GBRTENW"      # England & Wales, total
-min_year <- 1950
-max_year <- 2022           # HMD's current end year for E&W
+# Pulling the period data needed (cohort data id excluded)
+country<- "GBRTENW"      # England & Wales
+min_year<- 1950
+max_year<- 2022          # HMD's current end year for E&W
 
-columns <- c(
-  "Deaths_1x1",       # D(x,t)  -> Lee-Carter input (numerator)
-  "Exposures_1x1",    # E(x,t)  -> Lee-Carter input (offset/denominator)
-  "Mx_1x1",           # m(x,t)  -> pre-computed rate, for sanity-checking
-  "fltper_1x1",       # female period life table (qx, ex, ...)
-  "mltper_1x1",       # male   period life table 
+columns<- c(
+  "Deaths_1x1",       # D(x,t)-> Lee-Carter input(numerator)
+  "Exposures_1x1",    # E(x,t)-> Lee-Carter input(offset/denominator)
+  "Mx_1x1",           # m(x,t)-> pre-computed rate,for sanity-checking
+  "fltper_1x1",       # female period life table(qx, ex, ...)
+  "mltper_1x1",       # male period life table 
   "bltper_1x1"        # both-sexes period life table
 )
 
-dat_uk <- lapply(columns, function(x) {
+dat_uk <- lapply(columns,function(x) {
   cat("pulling", x, "...\n")
-  d <- readHMDweb(country,x, username = hmd_username, password = hmd_password)
+  d<- readHMDweb(country,x, username = hmd_username, password = hmd_password)
   d[d$Year >= min_year & d$Year <= max_year, ]
 })
 names(dat_uk) <- columns
-#the same for Ireland data
-country_2    <- "IRL"      # England & Wales, total
 
-dat_irl <- lapply(columns, function(x) {
-  cat("pulling", x, "...\n")
-  d <- readHMDweb(country_2 ,x, username = hmd_username, password =hmd_password )
-  d[d$Year >= min_year & d$Year <= max_year, ]
-})
-names(dat_irl) <- columns
-
-
-
-# data exploration --------------------------------------------------------
-lapply(dat_irl, dim)
-#all data has 8103 rows which is 73 years* 111 ages 0-110
-#Sanity checks for Mx
-#define each item alone
+# Data exploration --------------------------------------------------------
+# All variables has 8103 rows which is 73 years*111 ages 0-110
+# Sanity checks for Mx
+# Define each item alone
 D_UK <- dat_uk$Deaths_1x1
 E_UK <- dat_uk$Exposures_1x1
 Mx_UK <- dat_uk$Mx_1x1
-
 summary(Mx_UK)
-D_IRL <- dat_irl$Deaths_1x1
-E_IRL <- dat_irl$Exposures_1x1
-Mx_IRL <- dat_irl$Mx_1x1
 
-#order each by year and age 
+# Order each by year and age 
 D_UK  <- D_UK[order(D_UK$Year, D_UK$Age), ]
 E_UK  <- E_UK[order(E_UK$Year, E_UK$Age), ]
 Mx_UK <- Mx_UK[order(Mx_UK$Year, Mx_UK$Age), ]
 
-D_IRL  <- D_IRL[order(D_IRL$Year, D_IRL$Age), ]
-E_IRL  <- E_IRL[order(E_IRL$Year, E_IRL$Age), ]
-Mx_IRL <- Mx_IRL[order(Mx_IRL$Year, Mx_IRL$Age), ]
-
-#making sure the indices match 
+# Check for indices match 
 stopifnot(all(D_UK$Year == Mx_UK$Year), all(D_UK$Age == Mx_UK$Age),
           all(E_UK$Year == Mx_UK$Year), all(E_UK$Age == Mx_UK$Age))
-stopifnot(all(D_IRL$Year == Mx_IRL$Year), all(D_IRL$Age == Mx_IRL$Age),
-          all(E_IRL$Year == Mx_IRL$Year), all(E_IRL$Age == Mx_IRL$Age))
 
-#now we perform the sanity check for the total 
+# Performing the sanity check for the total Mx
 max((D_UK$Total/E_UK$Total)-Mx_UK$Total) #shows NA since in really old ages exposure is zero like in year 1950 and age 110 
 E_UK[which.min(E_UK$Total), ]
 
-#ignore the NA
+# Ignore the NA
 max(abs((D_UK$Total/E_UK$Total)-Mx_UK$Total),na.rm = TRUE) #BIG VALUES 
 
-diff_uk <- (D_UK$Total / E_UK$Total) - Mx_UK$Total
-i <- which(abs(diff_uk) > .000001)
-diffdat1 <- data.frame(Year = D_UK$Year[i], Age = D_UK$Age[i],
-           deaths = D_UK$Total[i], expo = E_UK$Total[i],
-           mx_hmd = Mx_UK$Total[i], ratio = D_UK$Total[i]/E_UK$Total[i])
+diff_uk <- (D_UK$Total/E_UK$Total) - Mx_UK$Total
+i <- which(abs(diff_uk)>.000001)
+diffdat1 <- data.frame(Year = D_UK$Year[i],Age = D_UK$Age[i],
+           deaths = D_UK$Total[i],expo = E_UK$Total[i],
+           mx_hmd = Mx_UK$Total[i],ratio = D_UK$Total[i]/E_UK$Total[i])
 summary(diffdat1)
 table(diffdat1$Age)
-sum(diffdat1$Age > 95)/ nrow(diffdat1)
-#we can see that 99.66% of the uk data that showed a difference more that 1e-6 are ages beyond 95 and 99.1% of the ireland data that showed a difference more that 1e-6 are ages beyond 90 and the 
-#reason for that is the precision of the deaths and exposure is to 2 decimal places while the Mx is calculated with more precision 
-# in the hmd data and that effect is exploited in older ages the exposure is already tiny so any rounding will have a great effect.
-# also after researching the hmd approach, the Mx that is produced in the hmd reports is already smoothed by the Kannisto model above ages of 80 years and especially above 95 where the transition 
-#from 80 to 95 they depend of the number of deaths if it's less that 100 then we use the fitted Mx if not then we use the raw one
-# that's why we see differences especially in those ages I will now check the deaths of ireland and uk were the diff was >1e-6 and see how many of them where smoothed it would make since if ireland had a percentage near 1 
-#since the age spread for ireland was bigger in the difference
+sum(diffdat1$Age > 95)/nrow(diffdat1)
+#we can see that 99.66% of the uk data that showed a difference more that 1e-6 are ages beyond 95 and the 
+# reason for that is the precision of the deaths and exposure is to 2 decimal places while the Mx is calculated with more precision 
+# in the HMD data and that effect is exploited in older ages the exposure is already tiny so any rounding will have a great effect
+# also after researching the HMD setup, the Mx that is produced in the hmd reports is already smoothed by the Kannisto model above ages of 80 years and especially above 95 where the fitting is done automatically while the transition 
+# from 80 to 95 depend of the number of deaths if it's less that 100 then we use the fitted Mx if not then we use the raw one
+# that's why we see differences especially in those ages I will now check the deaths  uk were the diff was >1e-6 and see how many of them where smoothed 
+# since the age spread for ireland was bigger in the difference
 # Uk ----
 band_uk <- diffdat1$Age >= 80 & diffdat1$Age <= 95
 sub_uk  <- diffdat1[band_uk, ]
@@ -155,28 +135,23 @@ m_uk_f <-mean(sub_uk_f$deaths <= 100)  # expect ~1
 band_uk_1_f <- diffdat1_f$Age > 95
 m1_uk_f <- mean(band_uk_1_f)
 m_uk_f+m1_uk_f
+
 #the .4% records
 diffdat1_f[!band_uk_1_f,]
 diffdat1_f[!band_uk_1_f,]$ratio-diffdat1_f[!band_uk_1_f,]$mx_hmd
 
 #we can see that for uk 99.6 % of the data with difference in Mx is for ages older than 95 so the smoothing was used and no younger ages recorded deaths less than 100
 # so the .4% which is 2 records for age 95 and the difference between the raw and the hmd ratio is considerably small and is because of approximation
-#while for Ireland 85% of those who had high differences where smoothed with 2.6% of them having death records less than 100, the rest of the 15% had a max absolute difference of  
-#5.667242e-06 which means the rest a result of the rounding.
-# reference https://www.mortality.org/Project/History and Thatcher, A. R., Kannisto, V., & Vaupel, J. W. (1998). The Force of Mortality at Ages 80 to 120. Monographs on Population Aging, Vol. 5. Odense: Odense University Press.
 
-
-# data quality for the lee carter to work 
+# Data quality for the Lee Carter to preeced without errors 
 # check for NA or zeros 
-quality_summary <- function(data, name) {
-  cat("QUALITY SUMMARY:", name, "\n")
+quality_summary <- function(data,name) {
+  cat("QUALITY SUMMARY:",name,"\n")
   cat("Duplicate Year-Age rows:\n")
   if ("Year" %in% names(data) & "Age" %in% names(data)) {
-    key <- paste(data$Year, data$Age, sep = "_")
-    cat(sum(duplicated(key)), "\n")
-  } else {
-    cat("No Year/Age columns found.\n")
-  }
+    key <- paste(data$Year,data$Age,sep = "_")
+    cat(sum(duplicated(key)),"\n")
+  } else { cat("No Year/Age columns found.\n") }
   
   numeric_cols <- names(data)[sapply(data, is.numeric)]
   
@@ -195,218 +170,131 @@ quality_summary(D_UK, "D_UK")
 quality_summary(E_UK, "E_UK")
 quality_summary(Mx_UK, "Mx_UK")
 
-#no NA's there is some zeros that we have to deal with before fitting the lee carter model
+# no NA's there is some zeros that we have to deal with before fitting the Lee Carter model
 # pulling the zeros 
 zero_D_UK_Male <- D_UK[D_UK$Male == 0 & !is.na(D_UK$Male), ]
 zero_D_UK_Female <- D_UK[D_UK$Female == 0 & !is.na(D_UK$Female), ]
-
-zero_D_IRL_Male <- D_IRL[D_IRL$Male == 0 & !is.na(D_IRL$Male), ]
-zero_D_IRL_Female <- D_IRL[D_IRL$Female == 0 & !is.na(D_IRL$Female), ]
-
 zero_D_UK_Total <- D_UK[D_UK$Total == 0 & !is.na(D_UK$Total), ]
-zero_D_IRL_Total <- D_IRL[D_IRL$Total == 0 & !is.na(D_IRL$Total), ]
 
 table(zero_D_UK_Male$Age)
 table(zero_D_UK_Female$Age)
-
-table(zero_D_IRL_Male$Age)
-table(zero_D_IRL_Female$Age)
-
 table(zero_D_UK_Total$Age)
-table(zero_D_IRL_Total$Age)
 
 # the zero deaths are more frequent in the higher ages which is explained by lower exposure
-#and the zeros in the exposure and deaths will cause issues for us when building the lee carter so we have to deal with them 
+# and the zeros in the exposure and deaths will cause issues for us when building the lee carter so we have to deal with them we will see how in following parts by seeting death+1
 
 #3D surface plotting 
 library(ggplot2)
 library(plotly)
 #create function
-plot_3d_surface <- function(data, sex, value_type, label, z_label, title_text) {
+plot_3d_surface<-function(data,sex,value_type,label,z_label,title_text) {
   temp <- data.frame(
-    Year = data$Year,
-    Age = data$Age,
-    value = data[[sex]] )
-  if (value_type == "deaths") {
-    temp$z <- log(temp$value + 1)} #to avoid log 0
+    Year=data$Year,
+    Age=data$Age,
+    value=data[[sex]] )
+  if (value_type=="deaths") {
+    temp$z<- log(temp$value+1)} #to avoid log 0
   if (value_type == "exposure") {
     temp$z <- log(temp$value)
-    temp$z[temp$value <= 0] <- NA }
+    temp$z[temp$value <= 0]<-NA }
   if (value_type == "mx") {
     temp$z <- log(temp$value)
     temp$z[temp$value <= 0] <- NA}
   
-  z_matrix <- xtabs(z ~ Age + Year, data = temp)
+  z_matrix <- xtabs(z ~ Age+Year,data=temp)
   z_matrix <- as.matrix(z_matrix)
-  ages <- as.numeric(rownames(z_matrix))
-  years <- as.numeric(colnames(z_matrix))
+  ages<-as.numeric(rownames(z_matrix))
+  years<-as.numeric(colnames(z_matrix))
   
-  p <- plot_ly(
-    x = years,
-    y = ages,
-    z = z_matrix,
-    type = "surface")
+  p<-plot_ly(
+    x=years,
+    y=ages,
+    z=z_matrix,
+    type="surface")
   
-  p <- layout(
-    p, title = title_text, scene = list(
-      xaxis = list(title = "Year"),
-      yaxis = list(title = "Age"),
-      zaxis = list(title = z_label)))
+  p <-layout(
+    p,title=title_text,scene=list(
+      xaxis = list(title="Year"),
+      yaxis = list(title="Age"),
+      zaxis = list(title=z_label)))
   return(p)}
 
-#death counts 3d
+#Death counts 3d plot
 p_3d_D_UK_Male <- plot_3d_surface(
   D_UK,
   "Male",
   "deaths",
   "UK",
-  "log(Deaths + 1)",
-  ""
-)
+  "log(Deaths + 1)","")
 
 p_3d_D_UK_Female <- plot_3d_surface(
   D_UK,
   "Female",
   "deaths",
   "UK",
-  "log(Deaths + 1)",
-  ""
-)
+  "log(Deaths + 1)","")
 
-p_3d_D_IRL_Male <- plot_3d_surface(
-  D_IRL,
-  "Male",
-  "deaths",
-  "Ireland",
-  "log(Deaths + 1)",
-  ""
-)
-
-p_3d_D_IRL_Female <- plot_3d_surface(
-  D_IRL,
-  "Female",
-  "deaths",
-  "Ireland",
-  "log(Deaths + 1)",
-  ""
-)
-
-#exposure 3d
-
+#Exposure 3d plot
 p_3d_E_UK_Male <- plot_3d_surface(
   E_UK,
   "Male",
   "exposure",
   "UK",
-  "log Exposure",
-  ""
-)
+  "log Exposure","")
 
-p_3d_E_UK_Female <- plot_3d_surface(
+p_3d_E_UK_Female<- plot_3d_surface(
   E_UK,
   "Female",
   "exposure",
   "UK",
-  "log Exposure",
-  ""
-)
-
-p_3d_E_IRL_Male <- plot_3d_surface(
-  E_IRL,
-  "Male",
-  "exposure",
-  "Ireland",
-  "log Exposure",
-  ""
-)
-
-p_3d_E_IRL_Female <- plot_3d_surface(
-  E_IRL,
-  "Female",
-  "exposure",
-  "Ireland",
-  "log Exposure",
-  ""
-)
+  "log Exposure","")
 
 #HMD mortality rate
-
 p_3d_Mx_UK_Male <- plot_3d_surface(
   Mx_UK,
   "Male",
   "mx",
   "UK",
-  "log Mx",
-  ""
-)
+  "log Mx","")
 
 p_3d_Mx_UK_Female <- plot_3d_surface(
   Mx_UK,
   "Female",
   "mx",
   "UK",
-  "log Mx",
-  ""
-)
-
-p_3d_Mx_IRL_Male <- plot_3d_surface(
-  Mx_IRL,
-  "Male",
-  "mx",
-  "Ireland",
-  "log Mx",
-  ""
-)
-
-p_3d_Mx_IRL_Female <- plot_3d_surface(
-  Mx_IRL,
-  "Female",
-  "mx",
-  "Ireland",
-  "log Mx",
-  ""
-)
+  "log Mx","")
 
 # Deaths
 p_3d_D_UK_Male
 p_3d_D_UK_Female
-
-
 # Exposures
 p_3d_E_UK_Male
 p_3d_E_UK_Female
-
-
 # HMD Mx
 par(mfrow = c(1,1))
 p_3d_Mx_UK_Male
 p_3d_Mx_UK_Female
 
-#we can see that even with the Kannisto model the Mx is still noisy and inconsistent across all years that's why we need to think 
-#if we need to cap the ages up to 100
+# We can see that even with the Kannisto model the Mx is still noisy and inconsistent across all years that's why we need to think 
+# if we need to cap the ages up to 100 for the lee carter fir to avoid noise capturing
 # we can also see the expected shape of high exposure in the infant years, the hump around 20 and the steep rise in old ages.
-
+# and the doenward trend in mortality across the years.
 par(mfrow=c(2,1))
-# mortality decline over time at selected fixed ages
+# PLOT: mortality decline over time at selected fixed ages
 ages_selected <- c(10,20, 40, 60, 80)
 mx_selected <- Mx_UK[Mx_UK$Age %in% ages_selected, ]
-
 mx_selected$log_Male <- log(mx_selected$Male)
 mx_selected$log_Female <- log(mx_selected$Female)
-
 # remove non-finite values if present
 mx_selected$log_Male[!is.finite(mx_selected$log_Male)] <- NA
 mx_selected$log_Female[!is.finite(mx_selected$log_Female)] <- NA
-
 # y-axis so the male and female figures are directly comparable
-ylim_selected <- range(mx_selected$log_Male,mx_selected$log_Female,
-  na.rm = TRUE)
+ylim_selected <- range(mx_selected$log_Male,mx_selected$log_Female,na.rm = TRUE)
 
-cols <- c("black","darkblue","orange","darkgreen","yellow")
-ltys <- c(1,2,3,4,5)
+cols<-c("black","darkblue","orange","darkgreen","yellow")
+ltys<-c(1,2,3,4,5)
 
-
-#male
+#Plot: Log-mortality over time at selected ages - male
 first_age<-ages_selected[1]
 temp<-mx_selected[mx_selected$Age==first_age,]
 plot(temp$Year,temp$log_Male,
@@ -416,29 +304,28 @@ plot(temp$Year,temp$log_Male,
   ylim=ylim_selected,xlab="Year",ylab=expression(log(m[x,t])),
   main="Male log-mortality over time at selected ages")
 
-for (i in 2:length(ages_selected)) {
+for (i in 2:length(ages_selected)){
   temp<-mx_selected[mx_selected$Age==ages_selected[i], ]
   lines(temp$Year,temp$log_Male,
     lwd=2,
     col=cols[i],
     lty=ltys[i])}
 
-legend(
-  "topright",
-  legend = paste("Age", ages_selected),
-  col = cols,
-  lty = ltys,
-  lwd = 2,
-  bty = "o",
-  bg = "white",
-  cex = 0.8,
-  seg.len = 1.5,
-  x.intersp = 0.4,
-  y.intersp = 0.9,
-  text.width = max(strwidth(paste("Age", ages_selected), cex = 0.8))
+legend("topright",
+  legend=paste("Age", ages_selected),
+  col=cols,
+  lty=ltys,
+  lwd=2,
+  bty="o",
+  bg="white",
+  cex=0.8,
+  seg.len=1.5,
+  x.intersp=0.4,
+  y.intersp=0.9,
+  text.width=max(strwidth(paste("Age",ages_selected),cex = 0.8))
 )
 
-# female
+#Plot: Log-mortality over time at selected ages - female
 first_age<-ages_selected[1]
 temp<-mx_selected[mx_selected$Age == first_age,]
 
@@ -448,108 +335,97 @@ plot(temp$Year,temp$log_Female,
   ylim=ylim_selected,xlab="Year",ylab=expression(log(m[x,t])),
   main= "Female log-mortality over time at selected ages")
 
-for (i in 2:length(ages_selected)) {
+for (i in 2:length(ages_selected)){
   temp<-mx_selected[mx_selected$Age==ages_selected[i], ]
   lines(temp$Year,temp$log_Female,
     lwd=2,
     col=cols[i],
     lty=ltys[i])}
 
-legend(
-  "topright",
-  legend = paste("Age", ages_selected),
-  col = cols,
-  lty = ltys,
-  lwd = 2,
-  bty = "o",
-  bg = "white",
-  cex = 0.8,
-  seg.len = 1.5,
-  x.intersp = 0.4,
-  y.intersp = 0.9,
-  text.width = max(strwidth(paste("Age", ages_selected), cex = 0.8))
+legend("topright",
+  legend=paste("Age",ages_selected),
+  col=cols,
+  lty=ltys,
+  lwd=2,
+  bty="o",
+  bg="white",
+  cex=0.8,
+  seg.len=1.5,
+  x.intersp=0.4,
+  y.intersp=0.9,
+  text.width=max(strwidth(paste("Age",ages_selected),cex = 0.8))
 )
 
-#kappa preview
-#I will now try to plot the mean log mortality across all ages for each year to try to see the kappa
+# kappa preview
+# I will now try to plot the mean log mortality across all ages for each year to try to see the expected kappa trend
 # Safe function because log(0) = -Inf, and na.rm = TRUE does not remove Inf
 mean_log <- function(x) {
-  
   log_x<-log(x)
   log_x<-log_x[is.finite(log_x)]
-  if (length(log_x) == 0) {
-    return(NA)
-  } else {
-    return(mean(log_x))
-  }
-} # or I could have made a condition afterwards to set the infinities to zero but this is one is easier
+  if (length(log_x)==0) {return(NA)
+  } else {return(mean(log_x))}
+} # or I could have made a condition afterwards to set the infinities to NA but this is one is easier
 
 years_UK <- sort(unique(Mx_UK$Year))
-
 mean_logmx_UK <- data.frame(
   Year = years_UK,
   Male = NA,
   Female = NA
 )
-
-for (i in 1:length(years_UK)) {
-  temp <- Mx_UK[Mx_UK$Year == years_UK[i], ]
-  mean_logmx_UK$Male[i] <- mean_log(temp$Male)
-  mean_logmx_UK$Female[i] <- mean_log(temp$Female)
+for (i in 1:length(years_UK)){
+  temp <- Mx_UK[Mx_UK$Year==years_UK[i], ]
+  mean_logmx_UK$Male[i]<-mean_log(temp$Male)
+  mean_logmx_UK$Female[i]<-mean_log(temp$Female)
 }
 
-#uk
+#Plot: Mean log-mortality over time, England & Wales
 ylim_UK <- range(
   mean_logmx_UK$Male[is.finite(mean_logmx_UK$Male)],
   mean_logmx_UK$Female[is.finite(mean_logmx_UK$Female)])
-plot(
-  mean_logmx_UK$Year,
-  mean_logmx_UK$Male,
-  type = "l",
-  lwd = 2,
-  xlab = "Year",
-  ylab = "Mean log Mx",
-  main = "Mean log mortality over time - England and Wales",
-  ylim = ylim_UK)
+plot(mean_logmx_UK$Year,mean_logmx_UK$Male,
+  type="l",
+  lwd=2,
+  xlab="Year",
+  ylab="Mean log Mx",
+  main="Mean log mortality over time - England and Wales",
+  ylim=ylim_UK)
 lines(
   mean_logmx_UK$Year,
   mean_logmx_UK$Female,
-  lwd = 2,
-  lty = 1,
-  col ="darkblue")
+  lwd=2,
+  lty=1,
+  col="darkblue")
 legend(
   "topright",
-  legend = c("Male", "Female"),
-  lty = c(1, 1),
-  lwd= c(2, 2),
-  col =c("black","darkblue"),
-  bty = "n")
+  legend=c("Male","Female"),
+  lty=c(1,1),
+  lwd=c(2,2),
+  col=c("black","darkblue"),
+  bty="n")
 
+#PLOT: Heat map Year-on-year change in log-mortality, England & Wales 
 #plot the difference in log mortality between each year and see if there is a big jump in mortality and in which years
-#for uk 
 library(plotly)
 # Data already sorted earlier, so we do NOT sort again
 stopifnot(all(D_UK$Year == E_UK$Year))
 stopifnot(all(D_UK$Age == E_UK$Age))
-
-ages_UK <- unique(D_UK$Age)
-years_UK <- unique(D_UK$Year)
+ages_UK<- unique(D_UK$Age)
+years_UK<- unique(D_UK$Year)
 
 # Manual total Mx = total deaths / total exposure
-manual_mx_UK <- D_UK$Total / E_UK$Total
+manual_mx_UK <- D_UK$Total/E_UK$Total
 
 # Remove impossible values before taking log
-manual_mx_UK[E_UK$Total <= 0] <- NA
-manual_mx_UK[manual_mx_UK <= 0] <- NA
-manual_mx_UK[!is.finite(manual_mx_UK)] <- NA
+manual_mx_UK[E_UK$Total <= 0]<- NA
+manual_mx_UK[manual_mx_UK <= 0]<- NA
+manual_mx_UK[!is.finite(manual_mx_UK)]<- NA
 
 # each column = one year, each row = one age
 mx_matrix_UK <- matrix(
   manual_mx_UK,
-  nrow = length(ages_UK),
-  ncol = length(years_UK),
-  byrow = FALSE)
-
+  nrow= length(ages_UK),
+  ncol= length(years_UK),
+  byrow=FALSE)
 rownames(mx_matrix_UK) <- ages_UK
 colnames(mx_matrix_UK) <- years_UK
 
@@ -557,7 +433,7 @@ colnames(mx_matrix_UK) <- years_UK
 log_mx_UK <- log(mx_matrix_UK)
 log_mx_UK[!is.finite(log_mx_UK)] <- NA
 
-# Difference from year to year:
+# Difference from year to year
 # log Mx(x,t) - log Mx(x,t-1)
 diff_log_mx_UK <- log_mx_UK[, -1] - log_mx_UK[, -ncol(log_mx_UK)]
 years_diff_UK <- years_UK[-1]
@@ -585,7 +461,6 @@ mtext(
 
 # YEARS WITH BIGGEST AVERAGE INCREASE - UK TOTAL
 mean_change_UK <- colMeans(diff_log_mx_UK, na.rm = TRUE)
-
 big_years_UK <- data.frame(
   Year = years_diff_UK,
   Mean_log_change = mean_change_UK
@@ -595,53 +470,14 @@ big_years_UK <- big_years_UK[order(-big_years_UK$Mean_log_change), ]
 head(big_years_UK, 10)
 length(mean_change_UK)
 mean_change_UK[70:72]
-#we can see that the 2020 mortality rates had the highest increased which is due to Covid-19 pandemic and we can also see that the year 2021 had an extra considerably lower increase in mortality with respect to 2020 but it's still positive and it hasn't gone
-#down since the covid 19 was still going in those years so higher moralities.
-#also, it's worth noting even though we will not consider cohort trend, that those who were 31 years old in 1951 meaning that they were born on 1920 which is the first generation born after the first world war where there was poverty and hunger, so  poor nutrition in addition to the spread of infectious diseases in that generation had the mortality rates to be cared out as high.    
+# We can see that the 2020 mortality rates had the highest increase which is due to Covid-19 pandemic and we can also see that the year 2021 had an extra considerably lower increase in mortality with respect to 2020 but it's still positive and it hasn't gone
+# down since the covid 19 was still going in those years so higher moralities.
+# also, it's worth noting even though we will not consider cohort trend, that those who were 31 years old in 1951 meaning that they were born on 1920 which is the first generation born after the first world war where there was poverty and hunger, so  poor nutrition 
+# in addition to the spread of infectious diseases in that generation had the mortality rates to be cared out as high.    
 
-# Zoomed heatmap: 2019-2020 ---------------------------------------------
-
-zoom_years <- c(2019, 2020)
-
-zoom_cols <- years_diff_UK %in% zoom_years
-
-diff_zoom_UK <- diff_log_mx_UK[, zoom_cols, drop = FALSE]
-
-# Use a symmetric colour scale
-lim_zoom_UK <- max(abs(diff_zoom_UK), na.rm = TRUE)
-
-image(
-  x = zoom_years,
-  y = ages_UK,
-  z = t(diff_zoom_UK),
-  col = colorRampPalette(c("blue", "white", "red"))(100),
-  zlim = c(-lim_zoom_UK, lim_zoom_UK),
-  xlab = "Year",
-  ylab = "Age",
-  main = "Mortality change around the onset of COVID-19",
-  xaxt = "n"
-)
-
-axis(
-  1,
-  at = zoom_years,
-  labels = c(
-    "2019\nvs 2018",
-    "2020\nvs 2019"
-  )
-)
-
-box()
-
-mtext(
-  "Red = mortality increased from previous year; Blue = mortality decreased",
-  side = 3,
-  line = 0.3,
-  cex = 0.75
-)
-
+# Zoomed heatmap: 2020-2021 ---------------------------------------------
 par(mfrow=c(1,1))
-# Zoomed heatmap: 2019-2020
+
 zoom_years <- c(2020,2021)
 zoom_cols <- years_diff_UK %in% zoom_years
 diff_zoom_UK <- diff_log_mx_UK[,zoom_cols,drop=FALSE]
@@ -657,20 +493,17 @@ box()
 mtext("Red = mortality increased from previous year; Blue = mortality decreased",
       side=3,line=0.3,cex=0.75)
 
-#end of data exploration 
+#End of Data exploration 
 
 
 # Chapter 4: The Lee-Carter Model
-# Section 4.4: The Data: Human Mortality Database (England \& Wales)
-
+# Section 4.5: The Data: Human Mortality Database (England \& Wales)
 # Data Preparation  -------------------------------------------------------
 # Fit three Lee-Carter specifications: unadjusted SVD on manual Mx, unadjusted SVD on HMD Mx, and Poisson using deaths and exposures.
-
 # Reserve 2020-2022 as the pandemic stress-test window.
 
-#Fixing the data and shaping it 
+# Set the data frames shape as needed 
 # Use ages 50-100, train on 1950-2014, validate on 2015-2019, and stress-test on 2020-2022.
-
 ages_to_fit<-50:100
 years_train<-1950:2014
 years_valid<-2015:2019
@@ -680,7 +513,6 @@ ages_length <- length(ages_to_fit)
 years_train_length <- length(years_train)
 years_valid_length <- length(years_valid)
 years_stress_length <- length(years_stress)
-
 sexes <- c("Male", "Female")
 
 # Check that the data is still ordered by Year then Age
@@ -688,55 +520,40 @@ stopifnot(all(D_UK$Year == rep(years_UK, each = length(ages_UK))))
 stopifnot(all(D_UK$Age == rep(ages_UK, times = length(years_UK))))
 
 #create a list to easily differentiate between female and male data 
-LC_UK <- list()
-
+LC_UK<-list()
 for (sex in sexes) {
   #calculating manual Mx
-  manual_mx <- D_UK[[sex]] / E_UK[[sex]]
+  manual_mx <- D_UK[[sex]]/E_UK[[sex]]
   manual_mx[E_UK[[sex]] <= 0] <- NA
   manual_mx[manual_mx <= 0] <- NA
   manual_mx[!is.finite(manual_mx)] <- NA
   #building the matrix format
-  manual_mx_matrix <- matrix(
-    manual_mx,
-    nrow = length(ages_UK),
-    ncol = length(years_UK),
-    byrow = FALSE
-  )
+  manual_mx_matrix <- matrix(manual_mx,
+    nrow = length(ages_UK), ncol = length(years_UK),
+    byrow = FALSE)
   
-  HMD_mx_matrix <- matrix(
-    Mx_UK[[sex]],
-    nrow = length(ages_UK),
-    ncol = length(years_UK),
-    byrow = FALSE
-  )
+  HMD_mx_matrix <- matrix(Mx_UK[[sex]],
+    nrow = length(ages_UK),ncol = length(years_UK),
+    byrow = FALSE)
   
-  D_matrix <- matrix(
-    D_UK[[sex]],
-    nrow = length(ages_UK),
-    ncol = length(years_UK),
-    byrow = FALSE
-  )
+  D_matrix <- matrix(D_UK[[sex]],
+    nrow = length(ages_UK),ncol = length(years_UK),
+    byrow = FALSE)
   
-  E_matrix <- matrix(
-    E_UK[[sex]],
-    nrow = length(ages_UK),
-    ncol = length(years_UK),
-    byrow = FALSE
-  )
+  E_matrix <- matrix(E_UK[[sex]],
+    nrow = length(ages_UK),ncol = length(years_UK),
+    byrow = FALSE)
   
   #add rows and columns names 
-  rownames(manual_mx_matrix) <- rownames(HMD_mx_matrix) <-rownames(D_matrix) <-rownames(E_matrix) <- ages_UK
-  colnames(manual_mx_matrix) <- colnames(D_matrix) <-colnames(HMD_mx_matrix) <-colnames(E_matrix) <- years_UK
+  rownames(manual_mx_matrix) <- rownames(HMD_mx_matrix) <-rownames(D_matrix) <-rownames(E_matrix)<-ages_UK
+  colnames(manual_mx_matrix) <- colnames(D_matrix) <-colnames(HMD_mx_matrix) <-colnames(E_matrix)<-years_UK
   
   #splitting the data
   age_rows <- rownames(manual_mx_matrix) %in% as.character(ages_to_fit)
-  
   train_cols <- colnames(manual_mx_matrix) %in% as.character(years_train)
   valid_cols <- colnames(manual_mx_matrix) %in% as.character(years_valid)
   stress_cols <- colnames(manual_mx_matrix) %in% as.character(years_stress)
   
-
   LC_UK[[sex]] <- list(
     manual_mx_full = manual_mx_matrix,
     HMD_mx_full = HMD_mx_matrix,
@@ -744,36 +561,31 @@ for (sex in sexes) {
     E_full = E_matrix,
     
     # Method 1 data: SVD on manual Mx
-    manual_train = manual_mx_matrix[age_rows, train_cols, drop = FALSE],
-    manual_valid = manual_mx_matrix[age_rows, valid_cols, drop = FALSE],
-    manual_stress = manual_mx_matrix[age_rows, stress_cols, drop = FALSE],
+    manual_train = manual_mx_matrix[age_rows,train_cols, drop = FALSE],
+    manual_valid = manual_mx_matrix[age_rows,valid_cols, drop = FALSE],
+    manual_stress = manual_mx_matrix[age_rows,stress_cols, drop = FALSE],
     
     # Method 2: SVD on HMD Mx
-    HMD_train = HMD_mx_matrix[age_rows, train_cols, drop = FALSE],
-    HMD_valid = HMD_mx_matrix[age_rows, valid_cols, drop = FALSE],
-    HMD_stress = HMD_mx_matrix[age_rows, stress_cols, drop = FALSE],
+    HMD_train = HMD_mx_matrix[age_rows,train_cols, drop = FALSE],
+    HMD_valid = HMD_mx_matrix[age_rows,valid_cols, drop = FALSE],
+    HMD_stress = HMD_mx_matrix[age_rows,stress_cols, drop = FALSE],
     
     # Method 3: Poisson Lee-Carter on deaths and exposures
-    P_D_train = D_matrix[age_rows, train_cols, drop = FALSE],
-    P_E_train = E_matrix[age_rows, train_cols, drop = FALSE],
-    P_D_valid = D_matrix[age_rows, valid_cols, drop = FALSE],
-    P_E_valid = E_matrix[age_rows, valid_cols, drop = FALSE],
-    P_D_stress = D_matrix[age_rows, stress_cols, drop = FALSE],
-    P_E_stress = E_matrix[age_rows, stress_cols, drop = FALSE]
+    P_D_train = D_matrix[age_rows,train_cols,drop = FALSE],
+    P_E_train = E_matrix[age_rows,train_cols,drop = FALSE],
+    P_D_valid = D_matrix[age_rows,valid_cols,drop = FALSE],
+    P_E_valid = E_matrix[age_rows,valid_cols,drop = FALSE],
+    P_D_stress = D_matrix[age_rows,stress_cols,drop = FALSE],
+    P_E_stress = E_matrix[age_rows,stress_cols,drop = FALSE]
   )
 }
 
-
-# Chapter 4: The Lee-Carter Model
-# Section 4.5: Fitting the Lee-Carter Model
-
-# LEE CARTER Implementation -----------------------------------------------
-# Fit the first two specifications by SVD, initially without the second-stage death-matching adjustment.
+# Lee Carter Implementation -----------------------------------------------
+# Fit the first two HMD calculated mortality by unadjusted SVD.
 ?demography::lca()
-
 #fitting the lee carter
 library(demography)
-#construct the mortality demogdata object for manual and Hmd data and for all sex
+#construct the mortality demogdata object for manual and HMD data and for all sex
 #for manual mx
 for (sex in sexes){
   LC_UK[[sex]]$manual_demogdata <- demogdata(
@@ -823,75 +635,76 @@ LC_UK$Male$manual_lca_sett_none$ax
 LC_UK$Male$manual_lca_sett_none$bx
 LC_UK$Male$manual_lca_sett_none$kt
 
-#plot alpha beta and kappa for each model to compare 
+# Plot alpha beta and kappa for each model to compare 
+#PLOT: Sanity check: κt from manual versus HMD rates
 par(mfrow=c(1,2))
 # Male
 plot(
   LC_UK$Male$manual_lca_sett_none$year,
   LC_UK$Male$manual_lca_sett_none$kt,
-  type = "l",
-  xlab = "Year",
-  ylab = expression(kappa[t]),
-  main = expression("Comparison of " * kappa[t] * " - Male"))
+  type="l",
+  xlab="Year",
+  ylab=expression(kappa[t]),
+  main=expression("Comparison of " * kappa[t] * " - Male"))
 lines(
   LC_UK$Male$hmd_lca_sett_none$year,
   LC_UK$Male$hmd_lca_sett_none$kt,
-  lwd = 2,
-  col = "darkblue")
+  lwd=2,
+  col="darkblue")
 legend(
   "topright",
-  legend = c("Manual Mx", "HMD Mx"),
-  col = c("black", "darkblue"),
-  lwd = c(2, 2),
-  bty = "n")
+  legend=c("Manual Mx","HMD Mx"),
+  col=c("black","darkblue"),
+  lwd=c(2, 2),
+  bty="n")
 # Female
 plot(
   LC_UK$Female$manual_lca_sett_none$year,
   LC_UK$Female$manual_lca_sett_none$kt,
-  type = "l",
-  lwd = 2,
-  xlab = "Year",
-  ylab = expression(kappa[t]),
-  main = expression("Comparison of " * kappa[t] * " - Female"))
+  type="l",
+  lwd=2,
+  xlab="Year",
+  ylab=expression(kappa[t]),
+  main=expression("Comparison of " * kappa[t] * " - Female"))
 lines(
   LC_UK$Female$hmd_lca_sett_none$year,
   LC_UK$Female$hmd_lca_sett_none$kt,
-  lwd =4,
-  col = "darkblue")
+  lwd=4,
+  col="darkblue")
 legend(
   "topright",
-  legend = c("Manual Mx", "HMD Mx"),
-  col = c("black", "darkblue"),
-  lwd = c(2, 4),
-  bty = "n")
+  legend=c("Manual Mx","HMD Mx"),
+  col=c("black","darkblue"),
+  lwd=c(2,4),
+  bty="n")
 
-max(abs( LC_UK$Female$manual_lca_sett_none$kt - LC_UK$Female$hmd_lca_sett_none$kt), na.rm = TRUE)
-summary( LC_UK$Male$manual_lca_sett_none$kt - LC_UK$Male$hmd_lca_sett_none$kt)
-#we can see that the difference between the manual and the HMD usage of Mx didn't have a great affect on the kappa-t fitted values of the two models 
-#and that is explain by the exploratory analysis which established that 99.6 % of the Mx rates with big difference between the two methods where as a result of ages <95 and since 
-#we capped the ages in out model the difference is almost negligible causing the two curves to fall closely on top of each other with maximum male difference of 0.0007765565.
-#and female difference of 0.0007421772.
+max(abs(LC_UK$Female$manual_lca_sett_none$kt - LC_UK$Female$hmd_lca_sett_none$kt),na.rm = TRUE)
+summary(LC_UK$Male$manual_lca_sett_none$kt - LC_UK$Male$hmd_lca_sett_none$kt)
+# we can see that the difference between the manual and the HMD usage of Mx didn't have a great affect on the kappa-t fitted values of the two models 
+# and that is explain by the exploratory analysis which established that 99.6 % of the Mx rates with big difference between the two methods where as a result of ages <95 and since 
+# we capped the ages in out model the difference is almost negligible causing the two curves to fall closely on top of each other with maximum male difference of 0.0007765565.
+# and female difference of 0.0007421772.
 
-#comparing alpha and beta 
+#plot comparason with alpha and bets
 #male
 plot(
   LC_UK$Male$manual_lca_sett_none$age,
   LC_UK$Male$manual_lca_sett_none$ax,
-  type = "l",
-  xlab = "Age",
-  ylab = expression(alpha[x]),
-  main = expression("Comparison of " * alpha[x] * " - Male"))
+  type="l",
+  xlab="Age",
+  ylab=expression(alpha[x]),
+  main=expression("Comparison of " * alpha[x] * " - Male"))
 lines(
   LC_UK$Male$hmd_lca_sett_none$age,
   LC_UK$Male$hmd_lca_sett_none$ax,
-  lwd = 2,
-  col = "red")
+  lwd=2,
+  col="red")
 legend(
   "topright",
-  legend = c("Manual Mx", "HMD Mx"),
-  col = c("black", "red"),
-  lwd = c(2, 2),
-  bty = "n")
+  legend=c("Manual Mx","HMD Mx"),
+  col=c("black","red"),
+  lwd=c(2,2),
+  bty="n")
 plot(
   LC_UK$Male$manual_lca_sett_none$age,
   LC_UK$Male$manual_lca_sett_none$bx,
@@ -906,30 +719,30 @@ lines(
   col = "red")
 legend(
   "topright",
-  legend = c("Manual Mx", "HMD Mx"),
-  col = c("black", "red"),
-  lwd = c(2, 2),
+  legend = c("Manual Mx","HMD Mx"),
+  col = c("black","red"),
+  lwd = c(2,2),
   bty = "n")
 # Female
 plot(
   LC_UK$Female$manual_lca_sett_none$age,
   LC_UK$Female$manual_lca_sett_none$ax,
-  type = "l",
-  lwd = 2,
-  xlab = "age",
-  ylab = expression(alpha[x]),
-  main = expression("Comparison of " * alpha[x] * " - Female"))
+  type="l",
+  lwd=2,
+  xlab="age",
+  ylab=expression(alpha[x]),
+  main=expression("Comparison of " * alpha[x] * " - Female"))
 lines(
   LC_UK$Female$hmd_lca_sett_none$age,
   LC_UK$Female$hmd_lca_sett_none$ax,
-  lwd = 2,
-  col = "red")
+  lwd=2,
+  col="red")
 legend(
   "topright",
-  legend = c("Manual Mx", "HMD Mx"),
-  col = c("black", "red"),
-  lwd = c(2, 2),
-  bty = "n")
+  legend=c("Manual Mx","HMD Mx"),
+  col=c("black","red"),
+  lwd=c(2,2),
+  bty="n")
 plot(
   LC_UK$Female$manual_lca_sett_none$age,
   LC_UK$Female$manual_lca_sett_none$bx,
@@ -945,30 +758,30 @@ lines(
   col = "red")
 legend(
   "topright",
-  legend = c("Manual Mx", "HMD Mx"),
-  col = c("black", "red"),
-  lwd = c(2, 2),
+  legend = c("Manual Mx","HMD Mx"),
+  col = c("black","red"),
+  lwd = c(2,2),
   bty = "n")
-max(abs( LC_UK$Female$manual_lca_sett_none$ax - LC_UK$Female$hmd_lca_sett_none$ax), na.rm = TRUE)
-max(abs( LC_UK$Female$manual_lca_sett_none$bx - LC_UK$Female$hmd_lca_sett_none$bx), na.rm = TRUE)
-#and the same explanation would follow to the bx and alpha x 
+max(abs( LC_UK$Female$manual_lca_sett_none$ax - LC_UK$Female$hmd_lca_sett_none$ax),na.rm = TRUE)
+max(abs( LC_UK$Female$manual_lca_sett_none$bx - LC_UK$Female$hmd_lca_sett_none$bx),na.rm = TRUE)
+
+# The same explanation would follow to the bx and alpha x 
 
 
 # Chapter 4: The Lee-Carter Model
 # Section 4.5: Fitting the Lee-Carter Model
-
 # Poisson and adjusted lee carter -----------------------------------------
 #implementing Poisson 
 library(StMoMo)
 ?StMoMo
 ?lc()
 ?fit
-#fit.StMoMo# Log-Poisson Lee-Carter model, Deaths ~ Poisson(expected deaths)
-poisson_LC_model <- lc(link = "log",const = "sum")
+?fit.StMoMo 
+#Poisson Lee-Carter model, Deaths ~ Poisson(expected deaths)
+poisson_LC_model <- lc(link="log",const="sum")
 for (sex in sexes) {
   D_temp <- as.matrix(LC_UK[[sex]]$P_D_train)
   E_temp <- as.matrix(LC_UK[[sex]]$P_E_train)
-
   storage.mode(D_temp) <- "numeric"
   storage.mode(E_temp) <- "numeric"
   
@@ -984,7 +797,7 @@ for (sex in sexes) {
   )
 }
 #adjusted lee carter on manual Mx 
-for (sex in sexes) {
+for (sex in sexes){
   LC_UK[[sex]]$manual_lca_sett_dt <- lca(
     data = LC_UK[[sex]]$manual_demogdata,
     series = sex,adjust = "dt")
@@ -992,9 +805,9 @@ for (sex in sexes) {
 LC_UK$Female$manual_lca_sett_dt
 LC_UK$Female$poisson_lc_fit$ages
 
-#the comparison of alpha beta and kappa 
+#PLOT : Fitted parameters from the three Lee–Carter estimation methods
 sexes<-c("Male","Female")
-old_par<-par(mfcol=c(3, 2))
+par(mfcol=c(3, 2))
 
 for (sex in sexes){
   poisson_ax<-LC_UK[[sex]]$poisson_lc_fit$ax
@@ -1117,26 +930,23 @@ for (sex in sexes){
 
 # Residual diagnostics ----------------------------------------------------
 # Compute residuals on a common log-mortality scale (since fit and residuals produce different outcomes)
-#r_{x,t} = ln m_{x,t} - (a_x + b_x k_t)
-
+# r_{x,t} = ln m_{x,t} - (a_x + b_x k_t)
 for (sex in sexes) {
   # The log-mortality training data
   log_mx_train <- log(LC_UK[[sex]]$manual_train)
   # Any -Inf from log(0) or log(inf)
-  log_mx_train[!is.finite(log_mx_train)] <- NA
+  log_mx_train[!is.finite(log_mx_train)]<-NA
   
   # Fitted values
   # SVD-none
   fit_none <- LC_UK[[sex]]$manual_lca_sett_none
-  fitted_none <- outer(fit_none$ax, rep(1, length(fit_none$year))) +
-    outer(fit_none$bx, fit_none$kt)
+  fitted_none <- outer(fit_none$ax,rep(1,length(fit_none$year))) + outer(fit_none$bx,fit_none$kt)
   rownames(fitted_none) <- fit_none$age
   colnames(fitted_none) <- fit_none$year
   
   # SVD-dt
   fit_dt <- LC_UK[[sex]]$manual_lca_sett_dt
-  fitted_dt <- outer(fit_dt$ax, rep(1, length(fit_dt$year))) +
-    outer(fit_dt$bx, fit_dt$kt)
+  fitted_dt <- outer(fit_dt$ax,rep(1,length(fit_dt$year))) + outer(fit_dt$bx,fit_dt$kt)
   rownames(fitted_dt) <- fit_dt$age
   colnames(fitted_dt) <- fit_dt$year
   
@@ -1145,26 +955,25 @@ for (sex in sexes) {
   ax_poi <- fit_poi$ax
   bx_poi <- fit_poi$bx[, 1]
   kt_poi <- fit_poi$kt[1, ]
-  fitted_poi <- outer(ax_poi, rep(1, length(kt_poi))) +
-    outer(bx_poi, kt_poi)
+  fitted_poi <- outer(ax_poi,rep(1,length(kt_poi)))+outer(bx_poi,kt_poi)
   rownames(fitted_poi) <- fit_poi$ages
   colnames(fitted_poi) <- fit_poi$years
   
   # Residuals on the common log-mortality scale
   LC_UK[[sex]]$residuals_none <- log_mx_train - fitted_none
-  LC_UK[[sex]]$residuals_dt   <- log_mx_train - fitted_dt
-  LC_UK[[sex]]$residuals_poi  <- log_mx_train - fitted_poi
+  LC_UK[[sex]]$residuals_dt <- log_mx_train - fitted_dt
+  LC_UK[[sex]]$residuals_poi <- log_mx_train - fitted_poi
 }
 
 # Residual heat maps with base R image()
-plot_residual_heatmap <- function(residuals, title, zlim) {
-  ages_r  <- as.numeric(rownames(residuals))
+plot_residual_heatmap <- function(residuals,title,zlim) {
+  ages_r <- as.numeric(rownames(residuals))
   years_r <- as.numeric(colnames(residuals))
   image(
-    x    = years_r,
-    y    = ages_r,
-    z    = t(residuals),
-    col  = colorRampPalette(c("darkblue", "white", "red"))(100),
+    x=years_r,
+    y= ages_r,
+    z= t(residuals),
+    col= colorRampPalette(c("darkblue","white","red"))(100),
     zlim = zlim,
     xlab = "Year",
     ylab = "Age",
@@ -1174,8 +983,9 @@ plot_residual_heatmap <- function(residuals, title, zlim) {
 }
 
 # For each sex, produce a three-panel side-by-side comparison.
-# Colour scale is shared across the three panels so they are
-# visually comparable.
+# Colour scale is shared across the three panels so they are visually comparable.
+#PLOT: Residual heat maps, males
+#PLOT: Residual heat maps, females
 for (sex in sexes) {
   all_r <- c(
     LC_UK[[sex]]$residuals_none,
@@ -1208,7 +1018,7 @@ for (sex in sexes) {
   )
 }
 
-# Residual standard deviation by age
+# PLOT: Residual standard deviation by age
 par(mfrow=c(2,1))
 for (sex in sexes) {
   sd_by_age_none <- apply(LC_UK[[sex]]$residuals_none, 1, sd, na.rm = TRUE)
@@ -1245,67 +1055,57 @@ for (sex in sexes) {
 cat("\n--- Numerical summaries for the residual diagnostics section ---\n")
 for (sex in sexes) {
   sd_df <- LC_UK[[sex]]$sd_by_age
-  
-  cat("\n", sex, "\n", sep = "")
-  cat("Max residual SD across ages (unadjusted SVD): ",
-      round(max(sd_df$none, na.rm = TRUE), 4), "\n")
-  cat("Max residual SD across ages (adjusted SVD):   ",
-      round(max(sd_df$dt,   na.rm = TRUE), 4), "\n")
-  cat("Max residual SD across ages (Poisson):   ",
-      round(max(sd_df$poi,  na.rm = TRUE), 4), "\n")
+  cat("\n",sex,"\n",sep = "")
+  cat("Max residual SD across ages (unadjusted SVD): ",round(max(sd_df$none,na.rm = TRUE),4),"\n")
+  cat("Max residual SD across ages (adjusted SVD): ",round(max(sd_df$dt,na.rm = TRUE),4),"\n")
+  cat("Max residual SD across ages (Poisson): ",round(max(sd_df$poi,na.rm = TRUE),4),"\n")
   
   # Ratio at oldest age (90-100 average) vs middle age (50-70 average)
   # Higher ratio = more heteroscedastic
-  old_none<- mean(sd_df$none[sd_df$age >= 90], na.rm = TRUE)
-  mid_none<- mean(sd_df$none[sd_df$age >= 50 & sd_df$age <= 70],
-                   na.rm = TRUE)
-  old_poi<- mean(sd_df$poi[sd_df$age >= 90],  na.rm = TRUE)
-  mid_poi<- mean(sd_df$poi[sd_df$age >= 50 & sd_df$age <= 70],
-                   na.rm = TRUE)
-  
-  cat("Heteroscedasticity ratio (old/mid), SVD-none: ",
-      round(old_none / mid_none, 2), "\n")
-  cat("Heteroscedasticity ratio (old/mid), Poisson: ",
-      round(old_poi  / mid_poi,  2), "\n")
+  old_none<- mean(sd_df$none[sd_df$age >= 90],na.rm = TRUE)
+  mid_none<- mean(sd_df$none[sd_df$age >= 50 & sd_df$age <= 70],na.rm = TRUE)
+  old_poi<- mean(sd_df$poi[sd_df$age >= 90],na.rm = TRUE)
+  mid_poi<- mean(sd_df$poi[sd_df$age >= 50 & sd_df$age <= 70],na.rm = TRUE)
+  cat("Heteroscedasticity ratio (old/mid), SVD-none: ",round(old_none/mid_none,2),"\n")
+  cat("Heteroscedasticity ratio (old/mid), Poisson: ",round(old_poi/mid_poi,2),"\n")
 }
 
 # Chapter 5: Mortality Forecasting
 # Section 5.1: ARIMA Forecasting of the Period Index
-
 # Using the validation data -----------------------------------------------
 # Forecast kappa_t using the validation data.
+
 # Forecast kappa_t using a random walk with drift, i.e. ARIMA(0,1,0) with drift:
 library(forecast)
 kappa_methods <- c("svd_none", "svd_dt", "poisson")
 ?ts
 ?auto.arima
 ?forecast
+?Arima
 for (sex in sexes) { 
-  kappa_list <- list(
+  kappa_list<- list(
     svd_none= as.numeric(LC_UK[[sex]]$manual_lca_sett_none$kt),
     svd_dt= as.numeric(LC_UK[[sex]]$manual_lca_sett_dt$kt),
-    poisson= as.numeric(LC_UK[[sex]]$poisson_lc_fit$kt[1, ])
+    poisson= as.numeric(LC_UK[[sex]]$poisson_lc_fit$kt[1,])
   )
   
   LC_UK[[sex]]$kappa_forecast <- list()
-  for (m in kappa_methods) {
-    kt_ts <- ts(kappa_list[[m]], start = years_train[1], frequency = 1)
-    # Compare the imposed RWD with an automatically selected ARIMA model using d = 1.
-    aa <- auto.arima(kt_ts, d = 1, max.p = 3, max.q = 3, seasonal = FALSE,trace=TRUE,allowdrift = TRUE)
+  for (m in kappa_methods){
+    kt_ts <- ts(kappa_list[[m]],start = years_train[1],frequency = 1)
+    # Compare the imposed RWD with an automatically selected ARIMA model using d = 1 to maintain the normality and the one time parameter
+    aa <- auto.arima(kt_ts,d = 1,max.p = 3,max.q = 3,seasonal = FALSE,trace=TRUE,allowdrift = TRUE)
     
     # Fit the ARIMA(0,1,0) model with drift.
-    rwd_fit<- Arima(kt_ts, order = c(0, 1, 0), include.drift = TRUE)
+    rwd_fit<- Arima(kt_ts,order = c(0,1,0),include.drift = TRUE)
     theta_hat<- unname(coef(rwd_fit)["drift"])
     sigma_hat<- sqrt(rwd_fit$sigma2)
     
     # Check the fitted drift against the closed-form RWD estimate.
-    theta_closed_form <-
-      (kappa_list[[m]][years_train_length] - kappa_list[[m]][1]) /
-      (years_train_length - 1)
+    theta_closed_form <- (kappa_list[[m]][years_train_length] - kappa_list[[m]][1]) /(years_train_length-1)
     
     # Forecast the five validation years and three stress-test years.
     h_total<- years_valid_length + years_stress_length
-    fc <- forecast(rwd_fit, h = h_total, level = c(80, 95))
+    fc <- forecast(rwd_fit,h = h_total,level = c(80, 95))
     
     LC_UK[[sex]]$kappa_forecast[[m]] <- list(
       auto_arima_pick = aa,
@@ -1315,7 +1115,6 @@ for (sex in sexes) {
       sigma = sigma_hat,
       fc = fc
     )
-    
     cat("\n---", sex, "-", m, "---\n")
     cat("auto.arima picked: ", paste(arimaorder(aa), collapse = ",")," | our model: 0,1,0 + drift\n")
     cat("drift  =", round(theta_hat, 5),"(closed form:", round(theta_closed_form, 5), ")\n")
@@ -1326,58 +1125,58 @@ for (sex in sexes) {
 
 # Forecasting Chapter ------------------------------------------------------
 # Validation forecasting and model choice ----------------------------------
-# ARIMA(0,1,0)+drift forecast of kappa_t, validation, LC --------
+# ARIMA(0,1,0)+drift forecast of kappa_t, validation, LC
 library(forecast)
-#ARIMA forecasting of the period index 
+# ARIMA forecasting of the period index 
 # Define model labels and evaluation windows.
 methods <- c("svd_none","svd_dt","poisson")
 method_labels <- c(
-  svd_none= "SVD unadjusted",
-  svd_dt= "SVD adjusted",
-  poisson= "Poisson MLE"
+  svd_none="SVD unadjusted",
+  svd_dt="SVD adjusted",
+  poisson="Poisson MLE"
 )
 method_cols <- c(
-  svd_none= "black",
-  svd_dt= "red",
-  poisson= "darkblue"
+  svd_none="black",
+  svd_dt="red",
+  poisson="darkblue"
 )
-years_fc<- c(years_valid, years_stress)      # 2015-2022
+years_fc<- c(years_valid,years_stress)      # 2015-2022
 length_fc<- length(years_fc)                  # 8 = 5 validation + 3 stress
-n_sim<- 10000  #for the monte carlo will be used in the pricing chapter 
+n_sim<- 10000               # to obtain confiidence intervals 
 set.seed(20260727)
 
-# build the structure to pull (ax, bx, kt) out of the three different fit 
+# build the structure to pull (ax,bx,kt) out of the three different fit 
 get_lc_params <- function(sex, method) {
   if (method == "svd_none") {
     f <- LC_UK[[sex]]$manual_lca_sett_none
     out <- list(
-      ax= as.numeric(f$ax), bx= as.numeric(f$bx), kt = as.numeric(f$kt),
-      ages= as.numeric(f$age), years= as.numeric(f$year)
+      ax= as.numeric(f$ax),bx= as.numeric(f$bx),kt = as.numeric(f$kt),
+      ages= as.numeric(f$age),years= as.numeric(f$year)
     )
   } 
   else if (method == "svd_dt") {
     f <- LC_UK[[sex]]$manual_lca_sett_dt
     out <- list(
-      ax= as.numeric(f$ax), bx= as.numeric(f$bx), kt= as.numeric(f$kt),
-      ages= as.numeric(f$age), years= as.numeric(f$year)
+      ax= as.numeric(f$ax),bx= as.numeric(f$bx),kt= as.numeric(f$kt),
+      ages= as.numeric(f$age),years= as.numeric(f$year)
     )
   } 
   else if (method == "poisson") {
     f<- LC_UK[[sex]]$poisson_lc_fit
     out<- list(
-      ax= as.numeric(f$ax), bx = as.numeric(f$bx[, 1]),
-      kt= as.numeric(f$kt[1, ]),
-      ages= as.numeric(f$ages), years = as.numeric(f$years)
+      ax= as.numeric(f$ax),bx = as.numeric(f$bx[,1]),
+      kt= as.numeric(f$kt[1,]),
+      ages= as.numeric(f$ages),years = as.numeric(f$years)
     )
   } 
-  else {stop("unknown method: ", method)}
+  else {stop("unknown method: ",method)}
   names(out$ax)<- names(out$bx) <- as.character(out$ages)
   names(out$kt)<- as.character(out$years)
   out
 }
 
 # Align mortality matrices and fitted parameters by age.
-align_ages <- function(mat, ages) mat[as.character(ages), , drop = FALSE]
+align_ages <- function(mat,ages) mat[as.character(ages), ,drop = FALSE]
 
 # Convert mortality rates to finite log rates.
 log_rate_matrix <- function(mx) {
@@ -1385,18 +1184,18 @@ log_rate_matrix <- function(mx) {
   lm[!is.finite(lm)] <- NA
   lm}
 
-# Calculate out-of-sample implied kappa_t by least squares with ax and bx fixed.
-kappa_implied <- function(log_obs, ax, bx) {
-  apply(log_obs, 2, function(col) {
+# Calculating out-of-sample implied kappa_t by least squares with ax and bx fixed.
+kappa_implied <- function(log_obs,ax,bx) {
+  apply(log_obs,2,function(col) {
     temp <- is.finite(col)
     if (!any(temp)) return(NA_real_)
-    sum(bx[temp] * (col[temp] - ax[temp])) / sum(bx[temp]^2)
+    sum(bx[temp] * (col[temp] - ax[temp]))/sum(bx[temp]^2)
   })
 }
-# Calculate errors on the log-mortality and death-count scales; use Poisson deviance as a secondary metric.
-forecast_errors <- function(log_obs, log_fore, D_obs, E_obs) {
-  e    <- log_fore - log_obs
-  temp <- is.finite(e)
+# Calculating errors on the log-mortality and death-count scales also use Poisson deviance as a secondary metric.
+forecast_errors<- function(log_obs, log_fore,D_obs,E_obs) {
+  e<- log_fore - log_obs
+  temp<- is.finite(e)
   mx_obs<- exp(log_obs)
   mx_fc<- exp(log_fore)
   D_fc<- E_obs * mx_fc
@@ -1414,66 +1213,60 @@ forecast_errors <- function(log_obs, log_fore, D_obs, E_obs) {
   c(
     MAE_log= mean(abs(e[temp])), #only used to compare the errors without the penalization for extremes 
     RMSE_log= sqrt(mean(e[temp]^2)),
-    Poisson_deviance = 2 * sum(dev_terms),
+    Poisson_deviance= 2 * sum(dev_terms),
     n_cells= sum(temp)
   )
 }
 
-
-# Construct the forecasted log mortality from the kappa paths, then we compute prediction intervals from them.
-rates_from_kappa<- function(ax, bx, ages, kt_fc_mean, sims_kt, fc_years) {
+# Construcing the forecasted log mortality function from the kappa paths, then we compute prediction intervals from them.
+rates_from_kappa<- function(ax,bx,ages,kt_fc_mean,sims_kt,fc_years) {
   #the log mortality construction
-  log_mx_hat<- outer(bx, kt_fc_mean) + ax
-  dimnames(log_mx_hat) <- list(as.character(ages), as.character(fc_years))
+  log_mx_hat<- outer(bx,kt_fc_mean) + ax
+  dimnames(log_mx_hat) <- list(as.character(ages),as.character(fc_years))
   #the prediction interval
   pl80<- ph80 <- pl95 <- ph95 <- log_mx_hat
   pl80[]<- ph80[] <- pl95[] <- ph95[] <- NA_real_
   
   for (i in seq_len(length(ages))) {
     sim_lm<- ax[i] + bx[i] * sims_kt  
-    qs<- apply(sim_lm, 2, quantile,
-                probs = c(0.025, 0.10, 0.90, 0.975), na.rm = TRUE)
-    pl95[i,]<- qs[1, ]
-    pl80[i,]<- qs[2, ]
-    ph80[i,]<- qs[3, ]
-    ph95[i,]<- qs[4, ]
+    qs<- apply(sim_lm,2,quantile,probs = c(0.025,0.10,0.90,0.975),na.rm = TRUE)
+    pl95[i,]<- qs[1,]
+    pl80[i,]<- qs[2,]
+    ph80[i,]<- qs[3,]
+    ph95[i,]<- qs[4,]
   }
-  
   list(
-    ages = ages, years = fc_years, log_mx_fc = log_mx_hat,
-    prediction_l80 = pl80, prediction_h80 = ph80, prediction_l95 = pl95, prediction_h95 = ph95
+    ages = ages,years = fc_years,log_mx_fc = log_mx_hat,
+    prediction_l80 = pl80,prediction_h80 = ph80,prediction_l95 = pl95,prediction_h95 = ph95
   )
 }
 
-# Build the forecasts -----------------------------------------------------
-# Impose the Denuit RWD specification and retain auto-ARIMA as a robustness check.
+# Build the mortality forecasts -----------------------------------------------------
+# Impose the RWD specification and retain auto-ARIMA as a robustness check.
 for (sex in sexes) {
   #define an empty list to fill
   LC_UK[[sex]]$kappa_forecast <- list()
-
   for (m in methods) {
-    p<- get_lc_params(sex, m)
-    kt_ts<- ts(p$kt, start = min(p$years), frequency = 1)
-    
+    p<- get_lc_params(sex m)
+    kt_ts<- ts(p$kt,start = min(p$years),frequency = 1)
     # Select an ARIMA model from the data for comparison.
     aa <- auto.arima(
-      kt_ts, d = 1, max.p = 3, max.q = 3,
-      seasonal= FALSE, allowdrift = TRUE, trace = FALSE
-    )
+      kt_ts,d = 1,max.p = 3,max.q = 3,
+      seasonal= FALSE,allowdrift = TRUE,trace = FALSE)
     # Fit the RWD used in the thesis.
-    rwd<- Arima(kt_ts, order = c(0, 1, 0), include.drift = TRUE)
+    rwd<- Arima(kt_ts, order = c(0,1,0),include.drift = TRUE)
     theta<- unname(coef(rwd)["drift"])
-    se_theta<- sqrt(rwd$var.coef["drift", "drift"]) # standard error in drift
+    se_theta<- sqrt(rwd$var.coef["drift","drift"]) # standard error in drift
     sigma<- sqrt(rwd$sigma2) # the size of the future yearly random shocks ε
     # Check the maximum-likelihood drift against the endpoint estimate.
-    theta_cf <- (p$kt[length(p$kt)] - p$kt[1]) / (length(p$kt) - 1)
-    fc <- forecast(rwd, h = length_fc, level = c(80, 95))
+    theta_cf <- (p$kt[length(p$kt)] - p$kt[1])/(length(p$kt) - 1)
+    fc <- forecast(rwd,h = length_fc,level = c(80,95))
     
     # Simulate 10,000 kappa paths from the fitted RWD.
     kt_last<- p$kt[length(p$kt)]
-    theta_sim<- rnorm(n_sim, mean = theta, sd = se_theta) #drift simulations per path , uncertainty in the true average annual change in κ
-    eps <- matrix(rnorm(n_sim * length_fc, 0, sigma), n_sim, length_fc) # epsilon simulation, yearly shocks, per path per year
-    sims<- kt_last + outer(theta_sim, seq_len(length_fc)) + t(apply(eps, 1, cumsum))
+    theta_sim<- rnorm(n_sim,mean = theta,sd = se_theta) #drift simulations per path , uncertainty in the true average annual change in κ
+    eps <- matrix(rnorm(n_sim * length_fc,0,sigma),n_sim,length_fc) # epsilon simulation, yearly shocks, per path per year
+    sims<- kt_last + outer(theta_sim,seq_len(length_fc)) + t(apply(eps,1,cumsum))
     colnames(sims) <- as.character(years_fc)
     
     LC_UK[[sex]]$kappa_forecast[[m]] <- list(
@@ -1488,47 +1281,45 @@ for (sex in sexes) {
       kt_fc= as.numeric(fc$mean),
       sims= sims)
     
-    cat("\n---", sex, "-", method_labels[m], "---\n")
-    cat("auto.arima picked:", paste(arimaorder(aa), collapse = ","),"| model used: (0,1,0) + drift\n")
-    cat("drift =", round(theta, 4),
-        " (form:", round(theta_cf, 4),", s.e.:", round(se_theta, 4), ")\n")
-    cat("sigma =", round(sigma, 4), "\n")
+    cat("\n---",sex,"-",method_labels[m],"---\n")
+    cat("auto.arima picked:",paste(arimaorder(aa),collapse = ","),"| model used: (0,1,0) + drift\n")
+    cat("drift =",round(theta,4),
+        " (form:",round(theta_cf,4),", s.e.:",round(se_theta,4),")\n")
+    cat("sigma =",round(sigma,4),"\n")
   }
 }
 # Comment:the results show a really close drift values for both males and females
-#suggesting that estimated long-term downward trend kappa is independent of the sex and modelling methods
-
+# suggesting that estimated long-term downward trend kappa is independent of the sex and modelling methods
 # Comment:we can see that none of the auto arimas gave the (0,1,0) result, it preferred a more short term dynamic
-#higher orders of autoregressive and moving-average were used.
+# higher orders of autoregressive and moving-average were used.
 
 # we reconstruct the forecasted log-mortality for all ages 
 for (sex in sexes) {
   LC_UK[[sex]]$forecast_lm<- list()
   for (m in methods) {
-    p<- get_lc_params(sex, m)
+    p<- get_lc_params(sex,m)
     kf<- LC_UK[[sex]]$kappa_forecast[[m]]
     LC_UK[[sex]]$forecast_lm[[m]]<- rates_from_kappa(
-      ax= p$ax, bx= p$bx, ages= p$ages, kt_fc_mean= kf$kt_fc, sims_kt= kf$sims,fc_years= years_fc
+      ax= p$ax,bx=p$bx,ages= p$ages,kt_fc_mean= kf$kt_fc,sims_kt= kf$sims,fc_years= years_fc
     )}}
 LC_UK$Female$forecast_lm
-#extract the observed mortality rates (manually computed) in addition to deaths and exposures 
+#extract the observed mortality rates (manually computed) in addition to deaths and exposures  for the error matric
 obs_data <- list()
 for (sex in sexes) {
-  ages_sex <- get_lc_params(sex, "svd_none")$ages
+  ages_sex <- get_lc_params(sex,"svd_none")$ages
   obs_data[[sex]] <- list(
     valid= list(
-      log_mx= log_rate_matrix(align_ages(LC_UK[[sex]]$manual_valid,  ages_sex)),
-      D= align_ages(LC_UK[[sex]]$P_D_valid,  ages_sex),
-      E= align_ages(LC_UK[[sex]]$P_E_valid,  ages_sex),
+      log_mx= log_rate_matrix(align_ages(LC_UK[[sex]]$manual_valid,ages_sex)),
+      D= align_ages(LC_UK[[sex]]$P_D_valid,ages_sex),
+      E= align_ages(LC_UK[[sex]]$P_E_valid,ages_sex),
       years = years_valid),
     stress= list(
-      log_mx = log_rate_matrix(align_ages(LC_UK[[sex]]$manual_stress, ages_sex)),
-      D = align_ages(LC_UK[[sex]]$P_D_stress, ages_sex),
-      E= align_ages(LC_UK[[sex]]$P_E_stress, ages_sex),
+      log_mx = log_rate_matrix(align_ages(LC_UK[[sex]]$manual_stress,ages_sex)),
+      D = align_ages(LC_UK[[sex]]$P_D_stress,ages_sex),
+      E= align_ages(LC_UK[[sex]]$P_E_stress,ages_sex),
       years= years_stress)
   )
 }
-
 
 # Error metrics and prediction interval
 metrics_rows<- list()
@@ -1557,33 +1348,33 @@ for (sex in sexes) {
         D_obs= obs_data[[sex]][[dat]]$D,
         E_obs= obs_data[[sex]][[dat]]$E
       )
-      metrics_rows[[length(metrics_rows) + 1]] <- data.frame(
+      metrics_rows[[length(metrics_rows) +1]] <- data.frame(
         sex= sex,
         method= method_labels[m],
-        ts_model= "RWD",
-        window= dat,
+        ts_model="RWD",
+        window=dat,
         t(em),
         row.names= NULL,
         check.names= FALSE
       )
       
       # Check whether observed log-mortality is inside prediction intervals
-      in80<- log_obs>= fl$prediction_l80[, yrs, drop = FALSE] & log_obs<= fl$prediction_h80[, yrs, drop = FALSE]
-      in95<- log_obs>= fl$prediction_l95[, yrs, drop = FALSE] & log_obs<= fl$prediction_h95[, yrs, drop = FALSE]
+      in80<- log_obs>= fl$prediction_l80[,yrs,drop = FALSE] & log_obs<= fl$prediction_h80[,yrs,drop = FALSE]
+      in95<- log_obs>= fl$prediction_l95[,yrs,drop = FALSE] & log_obs<= fl$prediction_h95[,yrs,drop = FALSE]
       
-      prediction_rows[[length(prediction_rows) + 1]] <- data.frame(
+      prediction_rows[[length(prediction_rows) +1]] <- data.frame(
         sex = sex,method= method_labels[m],
         ts_model= "RWD",window= dat,
-        cover80= 100 * mean(in80, na.rm = TRUE),
-        cover95= 100 * mean(in95, na.rm = TRUE),
+        cover80= 100 * mean(in80,na.rm = TRUE),
+        cover95= 100 * mean(in95,na.rm = TRUE),
         row.names= NULL)
       
       k_imp<- kappa_implied(log_obs,p$ax,p$bx)
-      k_hat <- LC_UK[[sex]]$kappa_forecast[[m]]$kt_fc[match(yrs, as.character(years_fc))]
+      k_hat<- LC_UK[[sex]]$kappa_forecast[[m]]$kt_fc[match(yrs,as.character(years_fc))]
       #check again for dimensions
       stopifnot(length(k_hat) == length(k_imp))
-      
-      kappa_rows[[length(kappa_rows) + 1]] <- data.frame(
+      #the kappa 
+      kappa_rows[[length(kappa_rows) +1]] <- data.frame(
         sex= sex,method= method_labels[m],
         ts_model= "RWD",window= dat,
         year= as.numeric(yrs),
@@ -1597,7 +1388,232 @@ metrics_tab<- do.call(rbind, metrics_rows)
 prediction_tab<- do.call(rbind, prediction_rows)
 kappa_tab<- do.call(rbind, kappa_rows)
 
-#checking if there is any outliers 
+# storing implied kappas for plotting and comparison 
+for (sex in sexes) {
+  LC_UK[[sex]]$kappa_implied_oos <- list()
+  for (m in kappa_methods) {
+    p <- get_lc_params(sex,m)
+    LC_UK[[sex]]$kappa_implied_oos[[m]] <- c(
+      kappa_implied(obs_data[[sex]]$valid$log_mx,p$ax,p$bx),
+      kappa_implied(obs_data[[sex]]$stress$log_mx,p$ax,p$bx)
+    )}}
+
+# storing errors by age and years of the validation 
+for (sex in sexes) {
+  ages_sex<-get_lc_params(sex,"svd_none")$ages
+  yrs<-as.character(years_valid)
+  log_obs<-obs_data[[sex]]$valid$log_mx
+  
+  by_age<- data.frame(age= ages_sex)
+  by_year<- data.frame(year= years_valid,h= seq_along(years_valid))
+  
+  for (m in methods) {
+    e<- LC_UK[[sex]]$forecast_lm[[m]]$log_mx_fc[,yrs,drop = FALSE] - log_obs
+    by_age[[m]]<- apply(e,1, function(v) sqrt(mean(v^2,na.rm = TRUE)))
+    by_year[[m]]<- apply(e,2, function(v) sqrt(mean(v^2,na.rm = TRUE)))
+  }
+  
+  LC_UK[[sex]]$valid_rmse_by_age<- by_age
+  LC_UK[[sex]]$valid_rmse_by_year<- by_year
+}
+
+#plots
+#comparing implied with forecasted
+#PLOT: RWD forecast fans and implied period index, males
+#PLOT: RWD forecast fans and implied period index, females 
+par(mfrow = c(3,1))             
+for (sex in sexes) {
+  for (m in methods) {
+    p<- get_lc_params(sex,m)
+    kf<- LC_UK[[sex]]$kappa_forecast[[m]]
+    k_imp<- LC_UK[[sex]]$kappa_implied_oos[[m]]
+    lo95<- apply(kf$sims,2,quantile,0.025)
+    hi95<- apply(kf$sims,2,quantile,0.975)
+    lo80<- apply(kf$sims,2,quantile,0.10)
+    hi80<- apply(kf$sims,2,quantile,0.90)
+    #fitted kappa
+    plot(
+      p$years,p$kt,type = "l",lwd = 2,
+      xlim = range(c(p$years,years_fc)),
+      ylim = range(p$kt,lo95,hi95,k_imp,na.rm = TRUE),
+      xlab = "Year",ylab = expression(kappa[t]),
+      main = paste0(method_labels[m]," - ",sex)
+    )
+    #forecasted kappa confidence intervals
+    polygon(c(years_fc, rev(years_fc)),c(lo95, rev(hi95)),
+            col = rgb(0,0,0.5,0.15))
+    polygon(c(years_fc, rev(years_fc)),c(lo80,rev(hi80)),
+            col = rgb(0,0,0.5,0.25))
+    lines(years_fc,kf$kt_fc,lwd = 2,col = "darkblue")
+    points(years_fc,k_imp,pch = 19,cex = 0.8,col = "red")
+    abline(v = 2014.5,lty = 2); abline(v = 2019.5,lty = 3)
+    legend("bottomleft", bty = "n",cex = 1,
+           legend = c("fitted","RWD forecast","implied by data"),
+           col = c("black","darkblue","red"),
+           lwd = c(2,2,NA),pch = c(NA,NA,19))
+  }
+}
+#zoomed in version 
+par(mfrow=c(3,1))
+for (sex in sexes){
+  for (m in methods){
+    p<-get_lc_params(sex,m)
+    kf<-LC_UK[[sex]]$kappa_forecast[[m]]
+    k_imp<-LC_UK[[sex]]$kappa_implied_oos[[m]]
+    lo95<-apply(kf$sims,2,quantile,0.025)
+    hi95<-apply(kf$sims,2,quantile,0.975)
+    lo80<-apply(kf$sims,2,quantile,0.10)
+    hi80<-apply(kf$sims,2,quantile,0.90)
+    
+    keep_fit<- p$years>=2013
+
+    plot(p$years[keep_fit],p$kt[keep_fit],type="l",lwd=2,
+      xlim=c(2013,max(years_fc)),
+      ylim=range(p$kt[keep_fit],lo95,hi95,k_imp,na.rm=TRUE),
+      xlab="Year",ylab=expression(kappa[t]),
+      main=paste0(method_labels[m]," - ",sex))
+    last_year<-max(p$years)
+    last_kappa<-tail(p$kt,1)
+    years_fc_plot<-c(last_year,years_fc)
+    kt_fc_plot<-c(last_kappa,kf$kt_fc)
+    lo95_plot<-c(last_kappa,lo95)
+    hi95_plot<-c(last_kappa,hi95)
+    lo80_plot<-c(last_kappa,lo80)
+    hi80_plot<-c(last_kappa,hi80)
+    
+    polygon(c(years_fc_plot,rev(years_fc_plot)),c(lo95_plot,rev(hi95_plot)),
+            col=rgb(0,0,0.5,0.15))
+    polygon(c(years_fc_plot,rev(years_fc_plot)),c(lo80_plot,rev(hi80_plot)),
+            col=rgb(0,0,0.5,0.25))
+    lines(years_fc_plot,kt_fc_plot,lwd=2,col="darkblue")
+    points(years_fc,k_imp,pch=19,cex=0.8,col="red")
+    
+    abline(v=2014.5,lty=2)
+    abline(v=2019.5,lty=3)
+    legend("bottomleft",bty="n",cex=1,
+      legend=c("fitted","RWD forecast","implied by data"),
+      col=c("black","darkblue","red"),
+      lwd=c(2,2,NA),
+      pch=c(NA,NA,19)
+    )
+  }
+}
+
+# observed vs forecast log-mortality at selected old ages
+ages_show <- c(55,65,75,85,95,100)
+par(mfrow = c(2,3))
+for (sex in sexes) {
+  ages_sex <- get_lc_params(sex,"svd_none")$ages
+  lm_full <- log_rate_matrix(LC_UK[[sex]]$manual_mx_full[as.character(ages_sex), ,drop = FALSE])
+  yrs_hist <- as.numeric(colnames(lm_full))
+  
+  par(mfrow = c(3,2))
+  for (a in ages_show) {
+    ia<- match(as.character(a),rownames(lm_full))
+    fl<- LC_UK[[sex]]$forecast_lm[["poisson"]]
+    ia_f<- match(as.character(a),rownames(fl$log_mx_fc))
+    
+    plot(
+      yrs_hist,lm_full[ia,],type = "l", lwd = 1.5,
+      ylim= range(lm_full[ia,],fl$prediction_l95[ia_f,],fl$prediction_h95[ia_f,],na.rm= TRUE),
+      xlab= "Year",ylab= expression(ln~m[x*t]),
+      main= paste0(sex,", age ",a)
+    )
+    polygon(c(years_fc,rev(years_fc)),
+            c(fl$prediction_l95[ia_f,],rev(fl$prediction_h95[ia_f,])),
+            col = rgb(0,0,0.5,0.15),border = NA)
+    for (m in methods) {
+      lines(years_fc,LC_UK[[sex]]$forecast_lm[[m]]$log_mx_fc[ia_f,],
+            lwd = 2,col = method_cols[m])
+    }
+    abline(v=2014.5,lty = 2); abline(v = 2019.5,lty = 3)
+    legend("bottomleft",legend = method_labels,col = method_cols,
+           lwd = 2,bty = "n",cex = 0.7)
+  }
+}
+par(old_par)
+
+#PLOT: Validation RMSE by age and forecast horizon
+par(mfrow = c(2, 2))
+for (sex in sexes) {
+  ba<- LC_UK[[sex]]$valid_rmse_by_age
+  bh<- LC_UK[[sex]]$valid_rmse_by_year
+  
+  matplot(ba$age,as.matrix(ba[,methods]),type ="l",lty=1,
+          lwd= 2,col= method_cols[methods],
+          xlab= "Age",ylab= "RMSE of ln m",
+          main= paste("Validation RMSE by age -",sex))
+  legend("topleft",legend = method_labels,col = method_cols,lwd=2,bty="n",cex = 0.7)
+  
+  matplot(bh$year,as.matrix(bh[,methods]),type="b",lty=1,
+          lwd= 2,pch = 19,col= method_cols[methods],
+          xlab= "Year",ylab= "RMSE of ln m",
+          main= paste("Validation RMSE by horizon -",sex))
+  legend("topleft",legend=method_labels,col=method_cols,lwd=2,bty="n",cex=0.7)
+}
+par(old_par)
+
+# Model selection on the validation window
+selection <- list()
+for (sex in sexes) {
+  sub<- metrics_tab[metrics_tab$sex == sex & metrics_tab$window == "valid" & metrics_tab$ts_model == "RWD",]
+  sub$method_key<-methods[match(sub$method,method_labels[methods])]
+  best_rmse<- sub$method_key[which.min(sub$RMSE_log)]
+  best_mae<- sub$method_key[which.min(sub$MAE_log)]
+  best_dev<- sub$method_key[which.min(sub$Poisson_deviance)]
+  
+  selection[[sex]] <- list(
+    table = sub,best_by_rmse=best_rmse,best_bymae=best_mae,
+    best_by_devian=best_dev,selected=best_rmse)
+  LC_UK[[sex]]$selected_method<- best_rmse
+  
+  cat("LC model selection,",sex)
+  cat("lowest validation RMSE (log scale):",method_labels[best_rmse], "\n")
+  cat("lowest validation Poisson deviance:",method_labels[best_dev], "\n")
+  cat("lowest validation best_mae:",method_labels[best_mae], "\n")
+}
+
+# Validation RMSE restricted to bond-relevant ages
+bond_ages<- ages_to_fit[ages_to_fit >= 65]
+rmse_65plus_rows<- list()
+
+for (sex in sexes) {
+  log_obs_all<- obs_data[[sex]]$valid$log_mx
+  yrs <- as.character(years_valid)
+  for (m in methods) {
+    log_hat_all<-LC_UK[[sex]]$forecast_lm[[m]]$log_mx_fc[,yrs,drop = FALSE]
+    # Keep only ages 65+
+    ages_use <- intersect(as.character(bond_ages),
+                          intersect(rownames(log_obs_all),rownames(log_hat_all)) )
+    if (length(ages_use)== 0) {stop("No bond-relevant ages found ",sex, ", ",m)}
+    
+    log_obs_65<- log_obs_all[ages_use,yrs,drop = FALSE]
+    log_hat_65<- log_hat_all[ages_use,yrs,drop = FALSE]
+    error_65<- log_hat_65-log_obs_65
+    
+    # Exclude non-finite values
+    keep<-is.finite(error_65)
+    rmse_65plus<- sqrt(mean(error_65[keep]^2))
+    mae_65plus <- mean(abs(error_65[keep]))
+    rmse_65plus_rows[[length(rmse_65plus_rows) +1]] <-
+      data.frame(sex = sex,method_key= m,
+                 method= method_labels[m],age_range= paste0(min(as.numeric(ages_use)),"-", max(as.numeric(ages_use))),
+                 MAE_65plus = mae_65plus,RMSE_65plus = rmse_65plus,
+                 n_cells = sum(keep),row.names = NULL
+      )}}
+rmse_65plus_tab<- do.call(rbind,rmse_65plus_rows)
+
+# Compare overall validation RMSE with age-65+ validation RMSE
+overall_valid<- metrics_tab[ metrics_tab$window == "valid" & metrics_tab$ts_model == "RWD",
+                              c("sex","method","RMSE_log")]
+names(overall_valid)[names(overall_valid) == "RMSE_log"] <-"RMSE_50_100"
+
+rmse_comparison<- merge(overall_valid,
+                         rmse_65plus_tab[,c("sex","method","RMSE_65plus")],
+                         by = c("sex","method"),
+                         sort = FALSE)
+
+#checking if there is any outliers for Log mx
 log_error_rows<-list()
 for(sex in sexes){
   for(m in methods){
@@ -1611,7 +1627,6 @@ for(sex in sexes){
       temp<-expand.grid(
         age=as.numeric(rownames(log_error)),
         year=as.numeric(colnames(log_error)))
-      
       temp$error<-as.numeric(log_error)
       temp<-temp[is.finite(temp$error),]
       temp$sex<-sex
@@ -1665,239 +1680,15 @@ log_outliers<-do.call(rbind,lapply(groups,function(d){
 log_outliers<-log_outliers[order(-abs(log_outliers$error)),]
 rownames(log_outliers)<-NULL
 log_outliers
-
-# storing implied kappas for plotting and comparison 
-for (sex in sexes) {
-  LC_UK[[sex]]$kappa_implied_oos <- list()
-  for (m in kappa_methods) {
-    p <- get_lc_params(sex, m)
-    LC_UK[[sex]]$kappa_implied_oos[[m]] <- c(
-      kappa_implied(obs_data[[sex]]$valid$log_mx,  p$ax, p$bx),
-      kappa_implied(obs_data[[sex]]$stress$log_mx, p$ax, p$bx)
-    )}}
-
-# storing errors by age and years of the validation 
-for (sex in sexes) {
-  ages_sex<-get_lc_params(sex,"svd_none")$ages
-  yrs<-as.character(years_valid)
-  log_obs<-obs_data[[sex]]$valid$log_mx
-  
-  by_age<- data.frame(age= ages_sex)
-  by_year<- data.frame(year= years_valid, h= seq_along(years_valid))
-  
-  for (m in methods) {
-    e <- LC_UK[[sex]]$forecast_lm[[m]]$log_mx_fc[, yrs, drop = FALSE] - log_obs
-    by_age[[m]]<- apply(e, 1, function(v) sqrt(mean(v^2, na.rm = TRUE)))
-    by_year[[m]]<- apply(e, 2, function(v) sqrt(mean(v^2, na.rm = TRUE)))
-  }
-  
-  LC_UK[[sex]]$valid_rmse_by_age<- by_age
-  LC_UK[[sex]]$valid_rmse_by_year<- by_year
-}
-
-#plots(double check that I didn't mess any of the parameters up)
-#comparing implied with forecasted
-par(mfrow = c(3,1))
-for (sex in sexes) {
-  for (m in methods) {
-    p<- get_lc_params(sex, m)
-    kf<- LC_UK[[sex]]$kappa_forecast[[m]]
-    k_imp<- LC_UK[[sex]]$kappa_implied_oos[[m]]
-    lo95<- apply(kf$sims,2, quantile, 0.025)
-    hi95<- apply(kf$sims,2, quantile, 0.975)
-    lo80<- apply(kf$sims,2, quantile, 0.10)
-    hi80<- apply(kf$sims,2, quantile, 0.90)
-    #fitted kappa
-    plot(
-      p$years, p$kt, type = "l", lwd = 2,
-      xlim = range(c(p$years, years_fc)),
-      ylim = range(p$kt, lo95, hi95, k_imp, na.rm = TRUE),
-      xlab = "Year", ylab = expression(kappa[t]),
-      main = paste0(method_labels[m], " - ", sex)
-    )
-    #forecasted kappa confidence intervals
-    polygon(c(years_fc, rev(years_fc)), c(lo95, rev(hi95)),
-            col = rgb(0, 0, 0.5, 0.15))
-    polygon(c(years_fc, rev(years_fc)), c(lo80, rev(hi80)),
-            col = rgb(0, 0, 0.5, 0.25))
-    lines(years_fc, kf$kt_fc, lwd = 2, col = "darkblue")
-    points(years_fc, k_imp, pch = 19, cex = 0.8, col = "red")
-    abline(v = 2014.5, lty = 2); abline(v = 2019.5, lty = 3)
-    legend("bottomleft", bty = "n", cex = 1,
-           legend = c("fitted", "RWD forecast", "implied by data"),
-           col = c("black", "darkblue", "red"),
-           lwd = c(2, 2, NA), pch = c(NA, NA, 19))
-  }
-}
-#zoomed in version 
-par(mfrow=c(3,1))
-for (sex in sexes){
-  for (m in methods){
-    p<-get_lc_params(sex,m)
-    kf<-LC_UK[[sex]]$kappa_forecast[[m]]
-    k_imp<-LC_UK[[sex]]$kappa_implied_oos[[m]]
-    lo95<-apply(kf$sims,2,quantile,0.025)
-    hi95<-apply(kf$sims,2,quantile,0.975)
-    lo80<-apply(kf$sims,2,quantile,0.10)
-    hi80<-apply(kf$sims,2,quantile,0.90)
-    
-    keep_fit<-p$years>=2013
-
-    plot(p$years[keep_fit],p$kt[keep_fit],type="l",lwd=2,
-      xlim=c(2013,max(years_fc)),
-      ylim=range(p$kt[keep_fit],lo95,hi95,k_imp,na.rm=TRUE),
-      xlab="Year",ylab=expression(kappa[t]),
-      main=paste0(method_labels[m]," - ",sex))
-    last_year<-max(p$years)
-    last_kappa<-tail(p$kt,1)
-    years_fc_plot<-c(last_year,years_fc)
-    kt_fc_plot<-c(last_kappa,kf$kt_fc)
-    lo95_plot<-c(last_kappa,lo95)
-    hi95_plot<-c(last_kappa,hi95)
-    lo80_plot<-c(last_kappa,lo80)
-    hi80_plot<-c(last_kappa,hi80)
-    
-    polygon(c(years_fc_plot,rev(years_fc_plot)),c(lo95_plot,rev(hi95_plot)),
-            col=rgb(0,0,0.5,0.15))
-    polygon(c(years_fc_plot,rev(years_fc_plot)),c(lo80_plot,rev(hi80_plot)),
-            col=rgb(0,0,0.5,0.25))
-    lines(years_fc_plot,kt_fc_plot,lwd=2,col="darkblue")
-    points(years_fc,k_imp,pch=19,cex=0.8,col="red")
-    
-    abline(v=2014.5,lty=2)
-    abline(v=2019.5,lty=3)
-    legend("bottomleft",bty="n",cex=1,
-      legend=c("fitted","RWD forecast","implied by data"),
-      col=c("black","darkblue","red"),
-      lwd=c(2,2,NA),
-      pch=c(NA,NA,19)
-    )
-  }
-}
-
-# observed vs forecast log-mortality at selected ages old ages, the  
 ages_show <- c(55,65, 75, 85, 95,100)
 par(mfrow = c(2,3))
 for (sex in sexes) {
   ages_sex <- get_lc_params(sex, "svd_none")$ages
   lm_full  <- log_rate_matrix(LC_UK[[sex]]$manual_mx_full[as.character(ages_sex), , drop = FALSE])
   yrs_hist <- as.numeric(colnames(lm_full))
-  
-  par(mfrow = c(3,2))
-  for (a in ages_show) {
-    ia<- match(as.character(a),rownames(lm_full))
-    fl<- LC_UK[[sex]]$forecast_lm[["poisson"]]
-    ia_f<- match(as.character(a),rownames(fl$log_mx_fc))
-    
-    plot(
-      yrs_hist, lm_full[ia,],type = "l", lwd = 1.5,
-      ylim= range(lm_full[ia,],fl$prediction_l95[ia_f,],fl$prediction_h95[ia_f,],
-                   na.rm= TRUE),
-      xlab= "Year", ylab= expression(ln~m[x*t]),
-      main= paste0(sex, ", age ", a)
-    )
-    polygon(c(years_fc, rev(years_fc)),
-            c(fl$prediction_l95[ia_f,], rev(fl$prediction_h95[ia_f,])),
-            col = rgb(0, 0, 0.5, 0.15), border = NA)
-    for (m in methods) {
-      lines(years_fc, LC_UK[[sex]]$forecast_lm[[m]]$log_mx_fc[ia_f,],
-            lwd = 2, col = method_cols[m])
-    }
-    abline(v=2014.5,lty = 2); abline(v = 2019.5, lty = 3)
-    legend("bottomleft", legend = method_labels, col = method_cols,
-           lwd = 2, bty = "n", cex = 0.7)
-  }
-}
-par(old_par)
-
-#validation RMSE by age and by horizon
-par(mfrow = c(2, 2))
-for (sex in sexes) {
-  ba <- LC_UK[[sex]]$valid_rmse_by_age
-  bh <- LC_UK[[sex]]$valid_rmse_by_year
-  
-  matplot(ba$age, as.matrix(ba[,methods]), type = "l", lty = 1,
-          lwd = 2, col = method_cols[methods],
-          xlab = "Age", ylab = "RMSE of ln m",
-          main = paste("Validation RMSE by age -", sex))
-  legend("topleft", legend = method_labels, col = method_cols,
-         lwd = 2, bty = "n", cex = 0.7)
-  
-  matplot(bh$year, as.matrix(bh[,methods]), type = "b", lty = 1,
-          lwd = 2, pch = 19, col = method_cols[methods],
-          xlab = "Year", ylab = "RMSE of ln m",
-          main = paste("Validation RMSE by horizon -", sex))
-  legend("topleft", legend = method_labels, col = method_cols,
-         lwd = 2, bty = "n", cex = 0.7)
-}
-par(old_par)
-
-
-# Model selection on the validation window
-selection <- list()
-for (sex in sexes) {
-  sub<- metrics_tab[metrics_tab$sex == sex & metrics_tab$window == "valid" & metrics_tab$ts_model == "RWD", ]
-  sub$method_key<-methods[match(sub$method, method_labels[methods])]
-  best_rmse <- sub$method_key[which.min(sub$RMSE_log)]
-  best_mae <- sub$method_key[which.min(sub$MAE_log)]
-  best_dev  <- sub$method_key[which.min(sub$Poisson_deviance)]
-  
-  selection[[sex]] <- list(
-    table = sub, best_by_rmse = best_rmse, best_bymae = best_mae,
-    best_by_devian = best_dev, selected = best_rmse
-  )
-  LC_UK[[sex]]$selected_method <- best_rmse
-  
-  cat("LC model selection,", sex)
-  cat("lowest validation RMSE (log scale):", method_labels[best_rmse], "\n")
-  cat("lowest validation Poisson deviance:", method_labels[best_dev], "\n")
-  cat("lowest validation best_mae:", method_labels[best_mae], "\n")
-}
-
-# Validation RMSE restricted to bond-relevant ages
-bond_ages<- ages_to_fit[ages_to_fit >= 65]
-rmse_65plus_rows<- list()
-
-for (sex in sexes) {
-  log_obs_all<- obs_data[[sex]]$valid$log_mx
-  yrs <- as.character(years_valid)
-  for (m in methods) {
-    log_hat_all<-LC_UK[[sex]]$forecast_lm[[m]]$log_mx_fc[, yrs,drop = FALSE]
-    # Keep only ages 65+
-    ages_use <- intersect(as.character(bond_ages),
-                          intersect(rownames(log_obs_all), rownames(log_hat_all)) )
-    if (length(ages_use)== 0) {stop("No bond-relevant ages found ", sex, ", ", m)}
-    
-    log_obs_65<- log_obs_all[ages_use,yrs,drop = FALSE]
-    log_hat_65<- log_hat_all[ages_use,yrs,drop = FALSE]
-    error_65<- log_hat_65-log_obs_65
-    
-    # Exclude non-finite values
-    keep<-is.finite(error_65)
-    rmse_65plus<- sqrt(mean(error_65[keep]^2))
-    mae_65plus <- mean(abs(error_65[keep]))
-    rmse_65plus_rows[[length(rmse_65plus_rows) + 1]] <-
-      data.frame(sex = sex,method_key= m,
-                 method= method_labels[m],age_range= paste0(min(as.numeric(ages_use)),"-", max(as.numeric(ages_use))),
-                 MAE_65plus = mae_65plus,RMSE_65plus = rmse_65plus,
-                 n_cells = sum(keep),row.names = NULL
-      )}}
-rmse_65plus_tab<- do.call(rbind,rmse_65plus_rows)
-
-# Compare overall validation RMSE with age-65+ validation RMSE
-overall_valid <- metrics_tab[ metrics_tab$window == "valid" &metrics_tab$ts_model == "RWD",
-                              c("sex", "method", "RMSE_log")]
-names(overall_valid)[names(overall_valid) == "RMSE_log"] <-"RMSE_50_100"
-
-rmse_comparison <- merge(overall_valid,
-                         rmse_65plus_tab[,c("sex","method","RMSE_65plus")],
-                         by = c("sex", "method"),
-                         sort = FALSE)
-
 
 # Chapter 5: Mortality Forecasting
 # Section 5.2: LC-LSTM Based Forecasting
-
 # LSTM Implementation -----------------------------------------------------
 library(keras3) 
 library(tseries) #ADF and Jarque-Bera tests
@@ -1905,39 +1696,38 @@ library(tseries) #ADF and Jarque-Bera tests
 benchmark_method <- "poisson"
 lstm_lc_method <- benchmark_method
 
-# Tune the LC-LSTM over lags 1-5; lag 1 matches the one-step structure used in the reference paper.
+# Tuning the LC-LSTM over lags 1-5, lag 1 matches the one-step structure used in the reference paper and concides witht he RWD up to dome limit.
 lag_grid <- 1:5
 
-# Tune the hidden units and learning rate for the single-layer reference architecture.
-units_grid <- c(4, 8, 16, 32, 45) #number of neurons in the hidden layer
-lr_grid <- c(0.05 ,0.01, 0.005, 0.001) 
-# Use a fixed subtraining-validation split for hyperparameter tuning.
-train_split  <- 0.85        # 85% subtraining and the rest are validation
+# Tuning the hidden units and learning rate for the single-layer reference architecture.
+units_grid<- c(4,8,16,32,45) #number of neurons in the hidden layer
+lr_grid<- c(0.05,0.01,0.005,0.001) 
+# Using a fixed subtraining-validation split for hyperparameter tuning.
+train_split<- 0.85        # 85% subtraining and the rest are validation
 n_epochs<- 500 #the data can enter fully 500 times 
 patience<- 50 # we will wait for 50 consecutive times with no improvement to early stop the training
-batch_size<- 9  # it will reweight 6 times within each train 
+batch_size<- 9  # it will reweight 6 times within each train
 
-# Bagging The paper uses B = 1000
+# Bagging the paper uses B = 1000
 B_boot<- 500
-boot_epochs <- 250
+boot_epochs<- 250
 boot_refit<- "poisson"
 boot_type<- "deviance" # resample deviance residuals and then get the deaths out of them 
 
-alpha_level<- 0.05       # for 95%PI
-z_alpha<-qnorm(1 - alpha_level / 2) #critical value 
+alpha_level<- 0.05       # for 95% PI
+z_alpha<-qnorm(1 - alpha_level/2) #critical value 
 
 # Accumulate forecast noise through a random-walk representation.
-noise_random_walk <- TRUE
-base_seed <- 20260727
+noise_random_walk<-TRUE
+base_seed<-20260727
 
 # functions that will be needed
-
 # Standardise kappa for training and reverse the scaling after forecasting.
 std_fit <- function(x) {list(mean = mean(x),sd   = sd(x))}
 std_apply <- function(x, s) {(x - s$mean) / s$sd}
 std_inv <- function(z, s) {z * s$sd + s$mean}
 
-# create the lagged data set in j=1 case same as p=o in the ARIMA 
+# create the lagged data set in j=1 case same as p=0 in the ARIMA 
 make_lagged <- function(z,lag) { #we will get the lagged values in x and the corresponding observed kappa as y 
   n<- length(z)-lag #number of observations 
   X<-matrix(NA_real_,n,lag)
