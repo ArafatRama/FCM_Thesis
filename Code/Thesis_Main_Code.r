@@ -2814,7 +2814,7 @@ boe_sheet<-"4. spot curve"
 # Use the ECB euro spot curve for annuity calibration.
 annuity_discount_source<-"ecb_eur"
 ecb_aaa_source <- read.csv(
-  unz("../Data/ECB_AAA_SpotCurve.zip","data.csv"),
+  unz("../Data/ECB_AAA_SpotCurve.zip","ECB_AAA_SpotCurve.csv"),
   stringsAsFactors=FALSE
 )
 

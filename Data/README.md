@@ -10,13 +10,13 @@ The main analysis uses the files in this directory together with mortality data 
 
 ## ECB yield-curve data
 
-The approximately 3.3 GB `data.csv` input is stored in a compressed archive tracked with Git LFS. Install Git LFS before cloning or pulling the repository so the archive is downloaded to:
+The approximately 3.3 GB `ECB_AAA_SpotCurve.csv` input is stored in a compressed archive tracked with Git LFS. Install Git LFS before cloning or pulling the repository so the archive is downloaded to:
 
 ```text
 Data/ECB_AAA_SpotCurve.zip
 ```
 
-The archive must contain `data.csv`. The supplied analysis expects that CSV's header to begin with the following fields:
+The archive must contain `ECB_AAA_SpotCurve.csv`. The supplied analysis expects that CSV's header to begin with the following fields:
 
 ```text
 KEY,FREQ,REF_AREA,CURRENCY,PROVIDER_FM,INSTRUMENT_FM,PROVIDER_FM_ID,DATA_TYPE_FM,TIME_PERIOD,OBS_VALUE
