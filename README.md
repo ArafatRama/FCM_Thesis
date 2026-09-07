@@ -23,14 +23,7 @@ git clone <repository-url>
 cd <repository-directory>
 ```
 
-Rename the environment example inside `Code`:
-
-```sh
-cd Code
-mv .Renviron.example .Renviron
-```
-
-Open `.Renviron` and replace the placeholder values with your Human Mortality Database username and password. The renamed `.Renviron` file is ignored by Git and must never be committed. The analysis reads it relative to the `Code` directory.
+The repository includes `Code/.Renviron` with dummy Human Mortality Database credentials. Replace the placeholder values locally before running the analysis. Because this file is tracked, never commit actual credentials; restore the dummy values before committing. The analysis reads it relative to the `Code` directory.
 
 Next, open `Code/code.Rproj` in RStudio. Alternatively, enter the `Code` directory from a terminal:
 
@@ -102,8 +95,7 @@ This script writes PDF figures into the current working directory.
 .
 ├── README.md
 ├── Code/
-│   ├── .Renviron.example
-│   ├── .Renviron             # created locally; not committed
+│   ├── .Renviron             # tracked with dummy credentials
 │   ├── Thesis_Main_Code.r
 │   ├── Thesis_Conceptual_Plots.r
 │   ├── code.Rproj
