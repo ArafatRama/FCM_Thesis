@@ -7,7 +7,6 @@ The main analysis is in `Code/Thesis_Main_Code.r`. The smaller `Code/Thesis_Conc
 ## Requirements
 
 - R 4.5.1
-- Git LFS for downloading the ECB yield-curve dataset.
 - RStudio is optional, but the included `Code/code.Rproj` file makes it the easiest way to open the project.
 - An account with the Human Mortality Database, with access to the England and Wales and Ireland datasets.
 - The local input files listed under **Data files** below.
@@ -51,8 +50,6 @@ The analysis downloads mortality data directly from the Human Mortality Database
 | Irish Life annuity rates | `Data/Irishlife_annuity_data.xlsx` |
 | Bank of England nominal daily rates | `Data/glcnominalddata/BoE_daily_SpotCurve_2016-2024.xlsx` |
 | ECB yield-curve observations | `Data/ECB_AAA_SpotCurve.zip` |
-
-The compressed ECB CSV is tracked with Git LFS. Install Git LFS before cloning or pulling the repository. See `Data/README.md` for its expected format.
 
 The analysis references these inputs relative to the `Code` directory, so no machine-specific path changes are required.
 
