@@ -1763,7 +1763,7 @@ recursive_kappa <- function(model, finalobs , h) {
   temp
 }
 
-# D'Agostino-Pearson (Appendix B)
+# D'Agostino-Pearson
 # Skewness component: D'Agostino (1970). 
 # Kurtosis component: Anscombe & Glynn (1983).
 dagostino_pearson_test<-function(x) {
@@ -2280,7 +2280,6 @@ for(sex in sexes){
 
 # Chapter 5: Mortality Forecasting
 # Section 5.2: LC-LSTM Based Forecasting
-
 # Mortality rates and prediction intervals
 log_m_bounds<-function(ax,bx,k_lo,k_hi){
   lower_candidate<-outer(bx,k_lo)+ax
@@ -2442,67 +2441,7 @@ print(transform(
 # Section 5.3: Comparison of Forecasting Approaches
 
 # Plots
-old_par<-par(no.readonly=TRUE)
-par(mfrow=c(2,2))
-par(mfrow=c(1,length(sexes)))
-for(sex in sexes){
-  st<-lstm_setup[[sex]]
-  k_imp<-kappa_implied(
-    cbind(obs_data[[sex]]$valid$log_mx,obs_data[[sex]]$stress$log_mx),
-    st$ax,
-    st$bx
-  )
-  plot(
-    st$years_tr,
-    st$kt,
-    type="l",
-    lwd=2,
-    xlim=c(min(st$years_tr),max(years_fc)),
-    ylim=range(
-      st$kt,
-      st$pi$lower,
-      st$pi$upper,
-      st$LC_benchmark$lower,
-      st$LC_benchmark$upper,
-      k_imp,
-      na.rm=TRUE
-    ),
-    xlab="Year",
-    ylab=expression(kappa[t]),
-    main=paste0(sex,": LC-LSTM vs RWD")
-  )
-  polygon(
-    c(years_fc,rev(years_fc)),
-    c(st$LC_benchmark$lower,rev(st$LC_benchmark$upper)),
-    col=rgb(0.25,0.5,0.9,0.30),
-    border=NA
-  )
-  polygon(
-    c(years_fc,rev(years_fc)),
-    c(st$pi$lower,rev(st$pi$upper)),
-    col=rgb(0.95,0.65,0.15,0.55),
-    border=NA
-  )
-  lines(years_fc,st$LC_benchmark$kbar,lwd=2,col="navy")
-  lines(years_fc,st$pi$kbar,lwd=2,col="darkorange3")
-  points(years_fc,k_imp,pch=19,cex=0.9,col="red")
-  abline(v=max(st$years_tr)+0.5,lty=2)
-  abline(v=max(obs_data[[sex]]$valid$years)+0.5,lty=3)
-  legend(
-    "bottomleft",
-    bty="n",
-    cex=0.75,
-    legend=c("Fitted","LC-RWD","LC-LSTM","Implied kappa"),
-    col=c("black","navy","darkorange3","red"),
-    lwd=c(2,2,2,NA),
-    pch=c(NA,NA,NA,19)
-  )
-}
-
-old_par<-par(no.readonly=TRUE)
-layout(matrix(c(1,3,2,4),nrow=2,byrow=TRUE),widths=c(1,1.25))
-par(mar=c(4,4,3,1))
-
+# PLOT: RWD versus LC-LSTM forecasts with normal prediction ban
 plot_lstm_panel<-function(sex,zoom=FALSE){
   st<-lstm_setup[[sex]]
   k_imp<-kappa_implied(cbind(obs_data[[sex]]$valid$log_mx,obs_data[[sex]]$stress$log_mx),
@@ -2552,7 +2491,6 @@ plot_lstm_panel<-function(sex,zoom=FALSE){
     pch=c(NA,NA,NA,19)
   )
 }
-
 plot_lstm_panel(sexes[1],zoom=FALSE)
 plot_lstm_panel(sexes[2],zoom=FALSE)
 plot_lstm_panel(sexes[1],zoom=TRUE)
@@ -2560,6 +2498,7 @@ plot_lstm_panel(sexes[2],zoom=TRUE)
 
 par(old_par)
 
+#PLOT: Female and male log-mortality forecasts at selected ages, normal bands 
 for(sex in sexes){
   st<-lstm_setup[[sex]]
   log_full<-log_rate_matrix(
@@ -2614,7 +2553,8 @@ for(sex in sexes){
     )
   }
 }
-# the QQ and Histogram 
+                   
+# Bootstrap distributions and Q-Q plots of the 2019 forecast
 par(mfrow=c(4,2))
 for(sex in sexes){
   h_2019 <- match(2019, years_fc)
@@ -2653,6 +2593,7 @@ for(sex in sexes){
 par(mfrow=c(1,1))
 
 # Plots for pi not normal
+# PLOT: RWD versus LC-LSTM forecasts with quantile-based prediction bands
 old_par<-par(no.readonly=TRUE)
 layout(matrix(c(1,3,2,4),nrow=2,byrow=TRUE),widths=c(1,1.25))
 par(mar=c(4,4,3,1))
@@ -2712,6 +2653,7 @@ plot_lstm_panel_q(sexes[1],zoom=TRUE)
 plot_lstm_panel_q(sexes[2],zoom=TRUE)
 par(old_par)
 
+#PLOT: Female and male log-mortality forecasts at selected ages, quantile-based bands
 for(sex in sexes){
   st<-lstm_setup[[sex]]
   log_full<-log_rate_matrix(
@@ -2865,11 +2807,11 @@ seed_price<-20260820
 # Let the data determine the sign of alpha_cdf and use lambda_proc = -alpha_cdf for pricing.
 lambda_source<-"market_annuity"
 # Irish annuity quote used as the UK proxy.
-mercer_file<-"/Users/ramaarafat/Documents/MSc thesis/data/Rates to send_hardcoded.xlsx"
-mercer_sheet<-"Sheet1"
+Irishlife_file<-"/Users/ramaarafat/Documents/MSc thesis/data/Rates to send_hardcoded.xlsx"
+Irishlife_sheet<-"Sheet1"
 # Match the annuity commencement date to the pricing origin.
 annuity_commencement_date<-as.Date("2020-01-01")
-mercer_sex_column<-setNames(sexes,sexes) # "Male"->"Male", "Female"->"Female"
+Irishlife_sex_column<-setNames(sexes,sexes) # "Male"->"Male", "Female"->"Female"
 # Set the quoted annuity product terms.
 annuity_fund<-100000
 annuity_commission<-0.02    
@@ -2960,8 +2902,8 @@ payment_years<-issue_year+h_seq_price
 curve_target_date<-annuity_commencement_date
 
 # Extract the quoted annual pension at the commencement date by sex.
-read_mercer_quote<-function(){
-  raw<-as.data.frame(readxl::read_excel(mercer_file,sheet=mercer_sheet,skip=4,col_names=FALSE))
+read_Irishlife_quote<-function(){
+  raw<-as.data.frame(readxl::read_excel(Irishlife_file,sheet=Irishlife_sheet,skip=4,col_names=FALSE))
   blocks<-list(Male=c(1,3),Female=c(5,7),GenderNeutral=c(9,11))
   quotes<-list()
   for(nm in names(blocks)){
@@ -2978,7 +2920,7 @@ read_mercer_quote<-function(){
 select_quote<-function(tbl,target_date){
   elig<-tbl[!is.na(tbl$date)&tbl$date<=target_date,,drop=FALSE]
   if(nrow(elig)==0L){
-    stop("No Mercer quote on or before ",format(target_date,"%Y-%m-%d"))
+    stop("No Irish Life quote on or before ",format(target_date,"%Y-%m-%d"))
   }
   elig[which.max(elig$date),,drop=FALSE][1,]
 }
@@ -2986,10 +2928,10 @@ market_annuity_price<-setNames(rep(NA_real_,length(sexes)),sexes)
 annuity_pension<-setNames(rep(NA_real_,length(sexes)),sexes)
 annuity_quote_date<-setNames(rep(as.Date(NA),length(sexes)),sexes)
 
-mercer<-read_mercer_quote()
+Irishlife<-read_Irishlife_quote()
 for(sex in sexes){
-  blk<-mercer_sex_column[[sex]]
-  q<-select_quote(mercer[[blk]],curve_target_date)
+  blk<-Irishlife_sex_column[[sex]]
+  q<-select_quote(Irishlife[[blk]],curve_target_date)
   pension<-q$pension
   fund_for_annuity<-if(apply_commission_to_fund){
     annuity_fund*(1-annuity_commission)
@@ -3089,7 +3031,7 @@ if(any(!is.finite(spot_cc_curve_annuity))){
 }
 
 annuity_curve_lag_days<-as.integer(curve_target_date-annuity_curve_date)
-cat("\n--- Mercer Ireland annuity inputs (UK proxy) ---\n")
+cat("\n--- Irish Life annuity inputs (UK proxy) ---\n")
 print(data.frame(sex=sexes,quote_date=annuity_quote_date[sexes],
                  annuity_curve_date=annuity_curve_date,
                 annuity_curve_ccy=annuity_curve_ccy, 
@@ -3606,7 +3548,7 @@ print(round_numeric_df(rate_sensitivity,6),row.names=FALSE)
 # Section 7.1: Lee-Carter Calibration Results
 
 # Plots
-# Kannisto closure continuity check
+# PLOT: Kannisto closure of the mortality surface along the cohort diagonal . 
 par(mfrow=c(1,length(sexes)))
 for(sex in sexes){
   pr<-pricing[[sex]]
@@ -3627,7 +3569,7 @@ par(mfrow=c(1,1))
 
 # Chapter 7: Empirical Results
 # Section 7.2: Forecasting Results
-
+#PLOT: Period-index forecasts under P and Q^W 
 old_par<-par(no.readonly=TRUE)
 par(mfrow=c(1,length(sexes)))
 for(sex in sexes){
@@ -3659,7 +3601,7 @@ for(sex in sexes){
 
 # Chapter 7: Empirical Results
 # Section 7.2: Forecasting Results
-
+# PLOT: Survival term structures under both measures 
 par(mfrow=c(1,length(sexes)))
 for(sex in sexes){
   tm<-pricing[[sex]]$term
@@ -3685,23 +3627,7 @@ for(sex in sexes)
 
 # Chapter 7: Empirical Results
 # Section 7.4: Term Structure of the Risk Margin
-
-par(mfrow=c(1,1))
-if(run_lambda_sensitivity){
-  sensitivity_matrix<-do.call(cbind,lapply(sexes,function(sex){
-    lambda_sensitivity$k_tilde_pct[lambda_sensitivity$sex==sex]
-  }))
-  colnames(sensitivity_matrix)<-sexes
-  matplot(lambda_grid,sensitivity_matrix,type="b",pch=19,lty=1,lwd=2,
-          col=c("navy","darkorange3"),xlab=expression(lambda),
-          ylab="Relative additive margin (%)",main="Margin against the Wang parameter")
-  abline(v=lambda_proc, lty=3)
-  legend("topleft",legend=sexes,col=c("navy","darkorange3"),lwd=2,bty="n")
-}else{
-  plot.new()
-  title("Lambda sensitivity not run")
-}
-
+# PLOT: Term structure of the relative additive margin .
 par(mfrow=c(1,length(sexes)))
 for(sex in sexes){
   pr<-pricing[[sex]]
@@ -3717,4 +3643,20 @@ for(sex in sexes){
   legend("bottomright",bty="n",cex=0.8,
          legend=c("Process-level","Maturity-wise sqrt(h)","Denuit constant"),
          col=c("navy","darkorange3","grey45"),lty=c(1,2,3),lwd=c(2.5,1.5,1.5))
+}
+# PLOT: Sensitivity of the 25-year margin to the Wang parameter 
+par(mfrow=c(1,1))
+if(run_lambda_sensitivity){
+  sensitivity_matrix<-do.call(cbind,lapply(sexes,function(sex){
+    lambda_sensitivity$k_tilde_pct[lambda_sensitivity$sex==sex]
+  }))
+  colnames(sensitivity_matrix)<-sexes
+  matplot(lambda_grid,sensitivity_matrix,type="b",pch=19,lty=1,lwd=2,
+          col=c("navy","darkorange3"),xlab=expression(lambda),
+          ylab="Relative additive margin (%)",main="Margin against the Wang parameter")
+  abline(v=lambda_proc, lty=3)
+  legend("topleft",legend=sexes,col=c("navy","darkorange3"),lwd=2,bty="n")
+}else{
+  plot.new()
+  title("Lambda sensitivity not run")
 }
