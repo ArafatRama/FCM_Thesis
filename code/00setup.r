@@ -1688,7 +1688,7 @@ for (sex in sexes) {
   yrs_hist <- as.numeric(colnames(lm_full))
 
 # Chapter 5: Mortality Forecasting
-# Section 5.2: LC-LSTM Based Forecasting
+# Section 5.2.2: LC-LSTM Based Forecasting, Training Setup and Hyperparameters setup
 # LSTM Implementation -----------------------------------------------------
 library(keras3) 
 library(tseries) #ADF and Jarque-Bera tests
@@ -1698,7 +1698,6 @@ lstm_lc_method <- benchmark_method
 
 # Tuning the LC-LSTM over lags 1-5, lag 1 matches the one-step structure used in the reference paper and concides witht he RWD up to dome limit.
 lag_grid <- 1:5
-
 # Tuning the hidden units and learning rate for the single-layer reference architecture.
 units_grid<- c(4,8,16,32,45) #number of neurons in the hidden layer
 lr_grid<- c(0.05,0.01,0.005,0.001) 
@@ -1713,7 +1712,6 @@ B_boot<- 500
 boot_epochs<- 250
 boot_refit<- "poisson"
 boot_type<- "deviance" # resample deviance residuals and then get the deaths out of them 
-
 alpha_level<- 0.05       # for 95% PI
 z_alpha<-qnorm(1 - alpha_level/2) #critical value 
 
@@ -1723,32 +1721,30 @@ base_seed<-20260727
 
 # functions that will be needed
 # Standardise kappa for training and reverse the scaling after forecasting.
-std_fit <- function(x) {list(mean = mean(x),sd   = sd(x))}
-std_apply <- function(x, s) {(x - s$mean) / s$sd}
-std_inv <- function(z, s) {z * s$sd + s$mean}
+std_fit <- function(x) {list(mean = mean(x),sd= sd(x))}
+std_apply <- function(x, s) {(x - s$mean)/s$sd}
+std_inv <- function(z, s) {z*s$sd + s$mean}
 
 # create the lagged data set in j=1 case same as p=0 in the ARIMA 
 make_lagged <- function(z,lag) { #we will get the lagged values in x and the corresponding observed kappa as y 
   n<- length(z)-lag #number of observations 
   X<-matrix(NA_real_,n,lag)
-  for (i in seq_len(n)) X[i,] <- z[i:(i + lag - 1)]
-  list(X = array(X, dim = c(n, lag, 1)), 
-       y = z[(lag + 1):length(z)],
-       n = n)
+  for (i in seq_len(n)) X[i,] <- z[i:(i +lag-1)]
+  list(X=array(X,dim =c(n,lag,1)), 
+       y=z[(lag + 1):length(z)],n=n)
 }
 ?keras_model_sequential
 # Use one LSTM layer with ReLU activation, tanh recurrence, and a linear output layer.
-build_lstm <- function(lag, units, lr) {
-# 1L means one feature at each year: kappa
-model<-keras_model_sequential(input_shape=c(lag,1L))
+build_lstm <- function(lag,units,lr) {
+# 1 means one feature at each year: kappa
+  model<-keras_model_sequential(input_shape=c(lag,1))
   # hidden LSTM layer
   model$add(layer_lstm(units = units,
-      activation = "relu", recurrent_activation = "tanh"))
+      activation = "relu",recurrent_activation="tanh"))
   # output layer
-  model$add(layer_dense(units = 1L,activation = "linear"))
+  model$add(layer_dense(units = 1,activation="linear"))
   # the training procedure and updates
-  model$compile(optimizer = optimizer_adam(learning_rate = lr),
-    loss = "mse")
+  model$compile(optimizer = optimizer_adam(learning_rate = lr),loss = "mse")
   return(model)
 }
 # a recursive prediction function over the forecast years h,
@@ -1756,16 +1752,17 @@ recursive_kappa <- function(model, finalobs , h) {
   W<-matrix(finalobs, nrow = 1)
   temp<-numeric(h)
   for (j in seq_len(h)) {
-    p<-as.numeric(predict(model, array(W, dim = c(1, ncol(W), 1L))))
+    p<-as.numeric(predict(model, array(W, dim = c(1, ncol(W), 1))))
     temp[j] <- p
-    W<- cbind(W[,-1, drop = FALSE],p)
+    W<- cbind(W[,-1, drop = FALSE],p) #sinilar to a running mean the window moves
   }
   temp
 }
 
-# D'Agostino-Pearson
+# Statistical tests
 # Skewness component: D'Agostino (1970). 
 # Kurtosis component: Anscombe & Glynn (1983).
+# D'Agostino function
 dagostino_pearson_test<-function(x) {
   x<-x[is.finite(x)]
   n<-length(x)
@@ -1780,7 +1777,7 @@ dagostino_pearson_test<-function(x) {
   W2<-sqrt(2*(b2s-1)) - 1 
   del<- 1/sqrt(log(sqrt(W2)))
   alp<- sqrt(2/(W2-1))
-  #the test statistic if around 0 approximately normal then no skewness
+  #the test statistic: if around 0 approximately  then normal no skewness
   Z1<- del*log(Y/alp+sqrt((Y/alp)^2+1))
   
   # kurtosis
@@ -1795,9 +1792,9 @@ dagostino_pearson_test<-function(x) {
   
   K2 <- Z1^2 + Z2^2 # the combined test statistic  with two degrees of freedom since we have 2 summed values
   list(statistic = K2, 
-       p.value = pchisq(K2, df = 2, lower.tail = FALSE),
-       Z_skew = Z1, 
-       Z_kurt = Z2)
+       p.value=pchisq(K2,df = 2,lower.tail = FALSE),
+       Z_skew=Z1, 
+       Z_kurt=Z2)
 }
 
 # Reconstruct bootstrap deaths from resampled Poisson deviance residuals using bisection.
@@ -1858,19 +1855,21 @@ bootstrap_kappa <- function(D,E,ax,bx,kt,ages,years,
       ages.fit=ages,years.fit=years,
       verbose=FALSE)
   # return the bootstrap kappa series
-  as.numeric(f$kt[1, ])
+  as.numeric(f$kt[1,])
   }
-
+  
+# Chapter 5: Mortality Forecasting
+# Section 5.2.2: LC-LSTM Based Forecasting, Training Setup and Hyperparameters implementation
 # Split the training window 85:15 for tuning without using the test years.
 lstm_setup<-list()
 for (sex in sexes) {
-  p<-get_lc_params(sex, lstm_lc_method)
+  p<-get_lc_params(sex,lstm_lc_method)
   kt<-p$kt
   s<-std_fit(kt)
-  z  <- std_apply(kt, s)
+  z<-std_apply(kt,s)
   
-  n_tr  <- length(kt)
-  n_train_sub <- floor(train_split * n_tr)
+  n_tr<-length(kt)
+  n_train_sub<-floor(train_split * n_tr)
   
   lstm_setup[[sex]] <- list(
     lc_method = lstm_lc_method, ax = p$ax, bx = p$bx, ages = p$ages,
@@ -1879,11 +1878,9 @@ for (sex in sexes) {
     years_sub = p$years[seq_len(n_train_sub)],
     years_vs  = p$years[(n_train_sub + 1):n_tr]
   )
-  
-  cat(
-    sex, min(p$years), max(p$years), n_tr,
-    min(p$years), p$years[n_train_sub], p$years[n_train_sub + 1], max(p$years),
-    min(years_fc), max(years_fc))
+  cat(sex, min(p$years), max(p$years), n_tr,
+      min(p$years), p$years[n_train_sub], p$years[n_train_sub + 1], max(p$years),
+      min(years_fc), max(years_fc))
 }
 
 # The 65-year training window exceeds the reference paper's 40-observation minimum.
@@ -1894,7 +1891,7 @@ lstm_best<-list()
 for(sex in sexes){
   st<-lstm_setup[[sex]]
   scaler_tune<-std_fit(st$kt[seq_len(st$n_train_sub)]) #only use the sub training data to find mean and variance so no leakage involved
-  z_tune<-std_apply(st$kt,scaler_tune) #then we apply on all training data sun and validation sub
+  z_tune<-std_apply(st$kt,scaler_tune) #then we apply on all training data sub and validation sub
   best<-list(mse=Inf)
   for(lag in lag_grid){
     d<-make_lagged(z_tune,lag)
@@ -1906,17 +1903,17 @@ for(sex in sexes){
       for(lr in lr_grid){
         set_random_seed(base_seed)
         model<-build_lstm(lag,u,lr)
-        #for the fit to work
+        # choose based on the split 
         x_sub<-d$X[i_sub,,,drop=FALSE]
         y_sub<-array(d$y[i_sub],dim=c(length(i_sub),1))
         x_vs<-d$X[i_vs,,,drop=FALSE]
         y_vs<-array(d$y[i_vs],dim=c(length(i_vs),1))
-        
+        #for the fit to work
         storage.mode(x_sub)<-"double"
         storage.mode(y_sub)<-"double"
         storage.mode(x_vs)<-"double"
         storage.mode(y_vs)<-"double"
-        
+        # fitting the LSTM
         history<-keras3::fit(
           model,x=x_sub,y=y_sub,
           epochs=n_epochs,batch_size=batch_size,
@@ -1931,17 +1928,18 @@ for(sex in sexes){
             )
           )
         )
+        #calculating the mse for this pair 
         pv<-as.numeric(predict(model,x_vs,verbose=0))
         mse<-mean((std_inv(pv,scaler_tune)-std_inv(d$y[i_vs],scaler_tune))^2)
         best_epoch<-which.min(as.numeric(history$metrics$val_loss))
-        
+        #recording the values for each pair 
         grid_rows[[length(grid_rows)+1]]<-data.frame(
           sex=sex,lag=lag,
           units=u,lr=lr,
           MSE_VS=mse,
           n_epochs=best_epoch,
           row.names=NULL)
-        
+        #obtaing the best lr X unit grid 
         if(is.finite(mse)&&mse<best$mse){
           best<-list(
             mse=mse,
@@ -1950,6 +1948,7 @@ for(sex in sexes){
             lr=lr,
             n_epochs=best_epoch)
         }
+        #clean up for storage 
         rm(model)
         gc(verbose=FALSE)
       }
@@ -2011,7 +2010,7 @@ for(sex in sexes){
   kt_fc<-std_inv(kt_fc_scaled,scaler_final)
   
   #retrieving the fitted kappas and unscaling them 
-  fit_in_scaled<-as.numeric( predict(model,x_all,verbose=0))
+  fit_in_scaled<-as.numeric(predict(model,x_all,verbose=0))
   fit_in<-std_inv(
     fit_in_scaled,
     scaler_final)
@@ -2062,9 +2061,9 @@ for(sex in sexes){
   #H0:ηt follows a normal distribution
   #H1:ηt does not follow a normal distribution.
   sw<-shapiro.test(innov)
-  # another normality tes skewness and kurtosis.
+  # another normality test skewness and kurtosis.
   dp<-dagostino_pearson_test(innov)
-  jb<-tseries::jarque.bera.test(innov) #doesn't scale we expect dp to give better result since out data size in small
+  jb<-tseries::jarque.bera.test(innov) #doesn't scale we expect dp to give better result since our data size in small
   adf<-suppressWarnings(tseries::adf.test(g)) #test if g is stationary (to be certain of our choice of the random walk H0 assumes stationary) or has the unit root effect
   lstm_setup[[sex]]$var_gamma<-var_gamma
   lstm_setup[[sex]]$noise_innov<-innov
@@ -2101,9 +2100,8 @@ print(transform(
 #The estimated innovation standard deviation is larger for females than for males, indicating greater unexplained year-to-year variation in the female period-index residuals.
 
 # Chapter 5: Mortality Forecasting
-# Section 5.2: LC-LSTM Based Forecasting
-
-#bagging
+# Section 5.2: LC-LSTM Based Forecasting, forcasting comparison
+# Bagging
 # Koissi bootstrap and network ensemble
 cat("\nBootstrap:",B_boot,"replicates per sex\n")
 for(sex in sexes){
@@ -2171,7 +2169,7 @@ for(sex in sexes){
   cat("  ",sex,": ",sum(keep)," usable replicates\n",sep="")
 }
 
-#FUNCTION TO OBTAIN THE QUANTILES 
+#defining a function to obtain the quantiles with no nirmality assumptions
 mixture_pi <- function(base_pred,noise_sd,shift=0){
   lower<-numeric(ncol(base_pred))
   upper<-numeric(ncol(base_pred))
@@ -2201,12 +2199,12 @@ mixture_pi <- function(base_pred,noise_sd,shift=0){
 #matched RWD bootstrap: reuses the SAME kappa replicates as the LSTM in order to compare
 h_seq <- seq_len(h_total)
 for (sex in sexes) {
-  st  <- lstm_setup[[sex]]
-  bk  <- st$boot$kappa#the replicates already used for the LSTM
+  st<- lstm_setup[[sex]]
+  bk<- st$boot$kappa#the replicates already used for the LSTM
   T_len <- ncol(bk)
   # closed-form RWD drift
-  theta_b <- (bk[, T_len] - bk[, 1]) / (T_len - 1)
-  kT_b    <- bk[, T_len]
+  theta_b <- (bk[, T_len] - bk[, 1])/(T_len - 1)
+  kT_b <- bk[, T_len]
   # per-replicate innovation sd across each year sd(ξt)
   sigma_b <- apply(bk, 1, function(k) sd(diff(k)))
   
@@ -2216,19 +2214,19 @@ for (sex in sexes) {
   
   # matched variance decomposition: ensemble spread + own innovation
   var_khat_rwd <- apply(rwd_boot_pred, 2, var)
-  sigma_rwd    <- as.numeric(LC_UK[[sex]]$kappa_forecast[[benchmark_method]]$sigma)
-  sd_matched   <- sqrt(var_khat_rwd + h_seq * sigma_rwd^2)
+  sigma_rwd <- as.numeric(LC_UK[[sex]]$kappa_forecast[[benchmark_method]]$sigma)
+  sd_matched <- sqrt(var_khat_rwd + h_seq * sigma_rwd^2)
   q_rwd <- mixture_pi(base_pred=rwd_boot_pred,noise_sd=sqrt(h_seq)*sigma_rwd)
   
   LC_UK[[sex]]$rwd_matched <- list(
     boot_pred = rwd_boot_pred,
     theta_boot = theta_b,
     sigma_boot = sigma_b,
-    kbar      = colMeans(rwd_boot_pred),
-    var_khat  = var_khat_rwd,
-    sd_total  = sd_matched,
-    lower     = colMeans(rwd_boot_pred) - z_alpha * sd_matched,
-    upper     = colMeans(rwd_boot_pred) + z_alpha * sd_matched,
+    kbar = colMeans(rwd_boot_pred),
+    var_khat = var_khat_rwd,
+    sd_total = sd_matched,
+    lower = colMeans(rwd_boot_pred) - z_alpha * sd_matched,
+    upper= colMeans(rwd_boot_pred) + z_alpha * sd_matched,
     lower_q = q_rwd$lower,
     upper_q = q_rwd$upper
   )
@@ -2278,8 +2276,6 @@ for(sex in sexes){
       "| RWD:", round(sqrt(LC_UK[[sex]]$rwd_matched$var_khat[h_total]), 3), "\n")
 }
 
-# Chapter 5: Mortality Forecasting
-# Section 5.2: LC-LSTM Based Forecasting
 # Mortality rates and prediction intervals
 log_m_bounds<-function(ax,bx,k_lo,k_hi){
   lower_candidate<-outer(bx,k_lo)+ax
@@ -2309,11 +2305,11 @@ for(sex in sexes){
     years=years_fc
   )
 }
-#for lee carter RANDOM WALK with bootstrap
+#for lee carter RWD with bootstrap
 for (sex in sexes) {
-  st  <- lstm_setup[[sex]]
+  st <- lstm_setup[[sex]]
   rwd <- LC_UK[[sex]]$rwd_matched
-  k_lc    <- as.numeric(rwd$kbar)
+  k_lc <- as.numeric(rwd$kbar)
   lower_k <- as.numeric(rwd$lower)
   upper_k <- as.numeric(rwd$upper)
   lower_k_q <- as.numeric(rwd$lower_q)
@@ -2328,18 +2324,18 @@ for (sex in sexes) {
   dimnames(bounds_q$lo)<-dimnames(bounds_q$hi)<-dimnames(log_m_lc)
   
   lstm_setup[[sex]]$LC_benchmark <- list(
-    kbar     = k_lc,
+    kbar = k_lc,
     var_khat = rwd$var_khat,
     sd_total = rwd$sd_total,
-    lower    = lower_k,
-    upper    = upper_k,
+    lower = lower_k,
+    upper = upper_k,
     lower_q = lower_k_q,
     upper_q = upper_k_q,
     lo_q = bounds_q$lo,
     hi_q = bounds_q$hi,
     log_m_fc = log_m_lc,
-    lo       = bounds$lo,
-    hi       = bounds$hi
+    lo = bounds$lo,
+    hi = bounds$hi
   )
 }
 
@@ -2360,6 +2356,7 @@ mpiw_func<-function(lo,hi){ #Mean Prediction Interval Width
   if(!any(keep))return(NA_real_)
   mean(hi[keep]-lo[keep])
 }
+                   
 kappa_metrics_rows<-list()
 for(sex in sexes){
   st<-lstm_setup[[sex]]
@@ -2437,11 +2434,8 @@ print(transform(
   MPIW_m_q=round(MPIW_m_q,3)
 ),row.names=FALSE)
 
-# Chapter 5: Mortality Forecasting
-# Section 5.3: Comparison of Forecasting Approaches
-
 # Plots
-# PLOT: RWD versus LC-LSTM forecasts with normal prediction ban
+# PLOT: RWD versus LC-LSTM forecasts with normal prediction bands
 plot_lstm_panel<-function(sex,zoom=FALSE){
   st<-lstm_setup[[sex]]
   k_imp<-kappa_implied(cbind(obs_data[[sex]]$valid$log_mx,obs_data[[sex]]$stress$log_mx),
@@ -2714,8 +2708,7 @@ for(sex in sexes){
 # RWD and LSTM are first compared on the validation window.
 # RWD is selected as the main pricing model.
 # Both mortality surfaces are then extended to age 120.
-# The LSTM is retained for sensitivity analysis.
-#comparing RWD and LSTM based only upon the bootstrapping
+# the lstm is retained for further work 
 benchmark_method<-"poisson"
 forecast_models<-c("RWD","LSTM")
 for(sex in sexes){LC_UK[[sex]]$selected_method<-benchmark_method}
@@ -2775,15 +2768,14 @@ get_ts_objects<-function(sex,ts_model){
     return(list(kappa=LC_UK[[sex]]$kappa_forecast_lstm,rates=LC_UK[[sex]]$forecast_lm_lstm))
   }
 }
+                   
 save.image("workspace.RData")
-
+                   
 # Chapter 6: Longevity Bond Pricing
 # Section 6.2: Monte Carlo Pricing under the Martingale Measure
-
 # Use Poisson Lee-Carter with an RWD for pricing.
 # Apply the primary Wang adjustment to kappa_t and retain the maturity-wise routes as benchmarks.
 # Calibrate lambda to the Irish annuity quotes using matching product cash flows.
-# Requires LC_UK, sexes, ages_to_fit, get_lc_params(), StMoMo, forecast, and readxl.
 library(StMoMo)
 library(forecast)
 # Settings
@@ -2801,7 +2793,7 @@ principal<-1 # retained to mirror Denuit et al.'s bond cash flow. it won't effec
 # Set the bond and simulation horizons.
 closure_model<-"kannisto"
 closure_band<-85:100
-closure_anchor<-TRUE #to match the lee carter 
+closure_anchor<-TRUE #to connect with the lee carter frocast at age 100
 n_sim_price<-10000
 seed_price<-20260820
 # Let the data determine the sign of alpha_cdf and use lambda_proc = -alpha_cdf for pricing.
@@ -2829,6 +2821,7 @@ boe_sheet<-"4. spot curve"
 annuity_discount_source<-"ecb_eur"
 ecb_aaa_source <- read.csv("/Users/ramaarafat/Documents/MSc thesis/data/data.csv",,stringsAsFactors=FALSE)
 
+# Functions                  
 # Round numeric data-frame columns for reporting.
 round_numeric_df<-function(x,digits=6){
   numeric_columns<-vapply(x,is.numeric,logical(1))
@@ -2855,6 +2848,7 @@ fit_lc_poisson<-function(sex,yrs,ages_fit=ages_to_fit){
   out
 }
 ?forecast::Arima
+# estimate its RWD parameters                   
 rwd_params<-function(kt){
   years<-as.numeric(names(kt))
   kt_ts<-ts(kt,start=years[1],frequency=1)
@@ -2867,7 +2861,10 @@ rwd_params<-function(kt){
     sigma=sigma,sigma2=sigma^2,se_theta=se_theta,
     kt_last=unname(kt[length(kt)]),origin_year=years[length(years)])
 }
+
+#Implementing the pricing STEP BY STEP:                 
 pricing<-setNames(vector("list",length(sexes)),sexes)
+#ontain the Lee carter and RWD parameters
 for(sex in sexes){
   params<-fit_lc_poisson(sex,price_fit_years)
   rw<-rwd_params(params$kt)
@@ -2884,6 +2881,7 @@ pricing_fit_table<-do.call(rbind,lapply(sexes,function(sex){
   )
 }))
 
+#last obtained year before the bond is alive
 origin_years<-vapply(pricing,function(z) z$rwd$origin_year,numeric(1))
 
 forecast_origin<-unique(origin_years)
@@ -2895,12 +2893,10 @@ attained_ages<-x0_cohort+h_seq_price
 mortality_years<-issue_year+h_seq_price-1
 payment_years<-issue_year+h_seq_price
 
-# Chapter 6: Longevity Bond Pricing
-# Section 6.3: Calibration of the Wang Parameter $\lambda$
-
 # market input and discount curve
 curve_target_date<-annuity_commencement_date
 
+# Functions:
 # Extract the quoted annual pension at the commencement date by sex.
 read_Irishlife_quote<-function(){
   raw<-as.data.frame(readxl::read_excel(Irishlife_file,sheet=Irishlife_sheet,skip=4,col_names=FALSE))
@@ -2919,11 +2915,13 @@ read_Irishlife_quote<-function(){
 
 select_quote<-function(tbl,target_date){
   elig<-tbl[!is.na(tbl$date)&tbl$date<=target_date,,drop=FALSE]
-  if(nrow(elig)==0L){
+  if(nrow(elig)==0){
     stop("No Irish Life quote on or before ",format(target_date,"%Y-%m-%d"))
   }
   elig[which.max(elig$date),,drop=FALSE][1,]
 }
+
+#Implement to obtain the quoted annual pension at the commencement date by sex
 market_annuity_price<-setNames(rep(NA_real_,length(sexes)),sexes)
 annuity_pension<-setNames(rep(NA_real_,length(sexes)),sexes)
 annuity_quote_date<-setNames(rep(as.Date(NA),length(sexes)),sexes)
@@ -2943,7 +2941,7 @@ for(sex in sexes){
   annuity_quote_date[sex]<-q$date
   }
 
-# Build the Bank of England spot curve at the issue date.
+# Extract the Bank of England spot curve (yield curve) at the issue date.
 boe_spot_all<-as.data.frame(readxl::read_excel(boe_file,sheet=boe_sheet,skip=3))
 names(boe_spot_all)[1]<-"date"
 boe_spot_all$date<-as.Date(boe_spot_all$date)
@@ -2974,8 +2972,9 @@ min(boe_maturity)
 
 boe_spot_cc<-boe_spot_pct/100 #from percentage to decimals 
 # Extract annual spot rates and hold the curve flat beyond the published maturities.
-annual_rates<-boe_spot_cc[seq(1,length(boe_maturity),by=2)]
-spot_cc_curve<-annual_rates[pmin(h_seq_price,length(annual_rates))]
+annual_rates<-boe_spot_cc[seq(1,length(boe_maturity),by=2)] #only get the yearly ones and delete the half year ones.
+#hold the curve flat afterwards 
+spot_cc_curve<-annual_rates[pmin(h_seq_price,length(annual_rates))] 
 disc_curve<-exp(-spot_cc_curve*h_seq_price)
 disc_bond<-disc_curve[seq_len(T_bond)]
 boe_last_maturity<-length(annual_rates)
@@ -2984,7 +2983,8 @@ boe_discount_curve<-data.frame(maturity=h_seq_price,spot_pct=100*spot_cc_curve,s
   discount_factor=disc_curve,extrapolated=h_seq_price>boe_last_maturity,
   row.names=NULL)
 
-# Build the ECB AAA euro-area spot curve used only for annuity calibration.
+# Build the ECB AAA euro-area spot curve used only for $\lambda$ calibration.
+# Function:
 read_ecb_spot_curve<-function(source){
   raw<-source
   # keep pure whole-year spot rates SR_1Y..SR_nY only.
