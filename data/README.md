@@ -8,16 +8,16 @@ The main analysis uses the files in this directory together with mortality data 
 
 ## ECB yield-curve data
 
-`data.csv` is not committed because the local copy is approximately 3.3 GB. Before running the pricing section, place the file here with this exact name:
+The approximately 3.3 GB `data.csv` input is stored in a compressed archive tracked with Git LFS. Install Git LFS before cloning or pulling the repository so the archive is downloaded to:
 
 ```text
-data/data.csv
+data/ECB_AAA_SpotCurve.zip
 ```
 
-The supplied analysis expects an ECB yield-curve CSV whose header begins with the following fields:
+The archive must contain `data.csv`. The supplied analysis expects that CSV's header to begin with the following fields:
 
 ```text
 KEY,FREQ,REF_AREA,CURRENCY,PROVIDER_FM,INSTRUMENT_FM,PROVIDER_FM_ID,DATA_TYPE_FM,TIME_PERIOD,OBS_VALUE
 ```
 
-Do not commit this file to ordinary Git hosting. Store it in an external data archive or another large-file service and record its source alongside the repository release.
+The Git repository stores an LFS pointer while the full dataset is stored through the configured Git LFS backend.

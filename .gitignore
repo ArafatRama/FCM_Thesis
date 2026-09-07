@@ -22,9 +22,6 @@ renv/python/
 # Temporary Office files
 ~$*
 
-# Large input supplied outside Git
-data/data.csv
-
 # Figures produced by the standalone plotting script
 code/wang_normal.pdf
 code/wang_lognormal.pdf

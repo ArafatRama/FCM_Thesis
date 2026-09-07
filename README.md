@@ -7,6 +7,7 @@ The main analysis is in `code/00setup.r`. The smaller `code/thesis_plots.r` scri
 ## Requirements
 
 - R 4.5.1
+- Git LFS for downloading the ECB yield-curve dataset.
 - RStudio is optional, but the included `code/code.Rproj` file makes it the easiest way to open the project.
 - An account with the Human Mortality Database, with access to the England and Wales and Ireland datasets.
 - The local input files listed under **Data files** below.
@@ -56,20 +57,12 @@ The analysis downloads mortality data directly from the Human Mortality Database
 | Input | Repository location |
 |---|---|
 | Mercer annuity rates | `data/Rates to send_hardcoded.xlsx` |
-| Bank of England nominal daily rates | `code/glcnominalddata/GLC Nominal daily data_2016 to 2024.xlsx` |
-| ECB yield-curve observations | `data/data.csv` |
+| Bank of England nominal daily rates | `data/glcnominalddata/GLC Nominal daily data_2016 to 2024.xlsx` |
+| ECB yield-curve observations | `data/ECB_AAA_SpotCurve.zip` |
 
-The ECB CSV is approximately 3.3 GB and is intentionally excluded from Git. Copy it into `data/data.csv` before running the pricing part of the analysis. See `data/README.md` for its expected format.
+The compressed ECB CSV is tracked with Git LFS. Install Git LFS before cloning or pulling the repository. See `data/README.md` for its expected format.
 
-### Existing absolute paths
-
-The source code has been preserved exactly as supplied. Lines 3132, 3150, and 3155 of `code/00setup.r` contain absolute paths from the computer on which the analysis was written:
-
-```text
-/Users/ramaarafat/Documents/MSc thesis/...
-```
-
-Those paths must resolve to the three files listed above. On another computer, either reproduce that directory layout or update only those three local path values before running the pricing section. No other source-code changes are required for the repository layout.
+The analysis references these inputs relative to the `code` directory, so no machine-specific path changes are required.
 
 ## Run the analysis
 
@@ -116,13 +109,12 @@ This script writes PDF figures into the current working directory.
 │   ├── thesis plota.r
 │   ├── code.Rproj
 │   ├── renv.lock
-│   ├── renv/
-│   ├── glcnominalddata/
-│   └── glcnominalmonthedata/
+│   └── renv/
 └── data/
     ├── README.md
     ├── Rates to send_hardcoded.xlsx
-    └── data.csv                 # local only; not committed
+    ├── ECB_AAA_SpotCurve.zip    # tracked with Git LFS
+    └── glcnominalddata/
 ```
 
-R session files, IDE settings, credentials, temporary Office files, generated figures, and the large ECB CSV are excluded from version control.
+R session files, IDE settings, credentials, temporary Office files, and generated figures are excluded from version control.
