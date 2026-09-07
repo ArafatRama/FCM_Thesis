@@ -30,7 +30,7 @@ cp .Renviron.example code/.Renviron
 
 Open `code/.Renviron` and replace the placeholder values with your Human Mortality Database username and password. The real `.Renviron` file is ignored by Git and must never be committed.
 
-The analysis reads these credentials from `code/.Renviron` using a path anchored to the repository root.
+The analysis currently also calls `readRenviron("~/.Renviron")`. Make sure the same two variables are present in your home-level `.Renviron`, or are already available in your R environment, before running the script.
 
 Next, open `code/code.Rproj` in RStudio. Alternatively, enter the code directory from a terminal:
 
@@ -61,7 +61,15 @@ The analysis downloads mortality data directly from the Human Mortality Database
 
 The ECB CSV is approximately 3.3 GB and is intentionally excluded from Git. Copy it into `data/data.csv` before running the pricing part of the analysis. See `data/README.md` for its expected format.
 
-All local inputs are referenced relative to the repository root, so no machine-specific path changes are required.
+### Existing absolute paths
+
+The source code has been preserved exactly as supplied. Lines 3132, 3150, and 3155 of `code/00setup.r` contain absolute paths from the computer on which the analysis was written:
+
+```text
+/Users/ramaarafat/Documents/MSc thesis/...
+```
+
+Those paths must resolve to the three files listed above. On another computer, either reproduce that directory layout or update only those three local path values before running the pricing section. No other source-code changes are required for the repository layout.
 
 ## Run the analysis
 

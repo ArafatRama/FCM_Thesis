@@ -1,9 +1,8 @@
 # Chapter 4: The Lee-Carter Model
 # Section 4.4: The Data: Human Mortality Database 
 # Importing the data from the HMD website
-repo_root<-normalizePath(if(dir.exists("code")&&dir.exists("data")) "." else "..",mustWork=TRUE)
 library(HMDHFDplus)
-readRenviron(file.path(repo_root,"code",".Renviron"))
+readRenviron("~/.Renviron")
 hmd_username<- Sys.getenv("HMD_USERNAME")
 hmd_password<- Sys.getenv("HMD_PASSWORD")
 # One test pull: England & Wales, single-age single-year death rates
@@ -2808,7 +2807,7 @@ seed_price<-20260820
 # Let the data determine the sign of alpha_cdf and use lambda_proc = -alpha_cdf for pricing.
 lambda_source<-"market_annuity"
 # Irish annuity quote used as the UK proxy.
-Irishlife_file<-file.path(repo_root,"data","Rates to send_hardcoded.xlsx")
+Irishlife_file<-"/Users/ramaarafat/Documents/MSc thesis/data/Rates to send_hardcoded.xlsx"
 Irishlife_sheet<-"Sheet1"
 # Match the annuity commencement date to the pricing origin.
 annuity_commencement_date<-as.Date("2020-01-01")
@@ -2824,11 +2823,11 @@ annuity_age<-65
 annuity_singlelife<-TRUE
 apply_commission_to_fund<-TRUE
 # Use the Bank of England nominal spot curve at the issue date for bond pricing.
-boe_file<-file.path(repo_root,"code","glcnominalddata","GLC Nominal daily data_2016 to 2024.xlsx")
+boe_file<-"/Users/ramaarafat/Documents/MSc thesis/code/glcnominalddata/GLC Nominal daily data_2016 to 2024.xlsx"
 boe_sheet<-"4. spot curve"
 # Use the ECB euro spot curve for annuity calibration.
 annuity_discount_source<-"ecb_eur"
-ecb_aaa_source <- read.csv(file.path(repo_root,"data","data.csv"),stringsAsFactors=FALSE)
+ecb_aaa_source <- read.csv("/Users/ramaarafat/Documents/MSc thesis/data/data.csv",,stringsAsFactors=FALSE)
 
 # Round numeric data-frame columns for reporting.
 round_numeric_df<-function(x,digits=6){
