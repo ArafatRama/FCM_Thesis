@@ -1247,7 +1247,7 @@ for (sex in sexes) {
   #define an empty list to fill
   LC_UK[[sex]]$kappa_forecast <- list()
   for (m in methods) {
-    p<- get_lc_params(sex m)
+    p<- get_lc_params(sex, m)
     kt_ts<- ts(p$kt,start = min(p$years),frequency = 1)
     # Select an ARIMA model from the data for comparison.
     aa <- auto.arima(
@@ -1680,12 +1680,6 @@ log_outliers<-do.call(rbind,lapply(groups,function(d){
 log_outliers<-log_outliers[order(-abs(log_outliers$error)),]
 rownames(log_outliers)<-NULL
 log_outliers
-ages_show <- c(55,65, 75, 85, 95,100)
-par(mfrow = c(2,3))
-for (sex in sexes) {
-  ages_sex <- get_lc_params(sex, "svd_none")$ages
-  lm_full  <- log_rate_matrix(LC_UK[[sex]]$manual_mx_full[as.character(ages_sex), , drop = FALSE])
-  yrs_hist <- as.numeric(colnames(lm_full))
 
 # Chapter 5: Mortality Forecasting
 # Section 5.2.2: LC-LSTM Based Forecasting, Training Setup and Hyperparameters setup
