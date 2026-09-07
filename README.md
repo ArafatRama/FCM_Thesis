@@ -23,15 +23,14 @@ git clone <repository-url>
 cd <repository-directory>
 ```
 
-Create your personal HMD environment file from the example:
+Rename the environment example inside `code`:
 
 ```sh
-cp .Renviron.example code/.Renviron
+cd code
+mv .Renviron.example .Renviron
 ```
 
-Open `code/.Renviron` and replace the placeholder values with your Human Mortality Database username and password. The real `.Renviron` file is ignored by Git and must never be committed.
-
-The analysis currently also calls `readRenviron("~/.Renviron")`. Make sure the same two variables are present in your home-level `.Renviron`, or are already available in your R environment, before running the script.
+Open `.Renviron` and replace the placeholder values with your Human Mortality Database username and password. The renamed `.Renviron` file is ignored by Git and must never be committed. The analysis reads it relative to the `code` directory.
 
 Next, open `code/code.Rproj` in RStudio. Alternatively, enter the code directory from a terminal:
 
@@ -56,8 +55,8 @@ The analysis downloads mortality data directly from the Human Mortality Database
 
 | Input | Repository location |
 |---|---|
-| Mercer annuity rates | `data/Rates to send_hardcoded.xlsx` |
-| Bank of England nominal daily rates | `data/glcnominalddata/GLC Nominal daily data_2016 to 2024.xlsx` |
+| Irish Life annuity rates | `data/Irishlife_annuity_data.xlsx` |
+| Bank of England nominal daily rates | `data/glcnominalddata/BoE_daily_SpotCurve_2016-2024.xlsx` |
 | ECB yield-curve observations | `data/ECB_AAA_SpotCurve.zip` |
 
 The compressed ECB CSV is tracked with Git LFS. Install Git LFS before cloning or pulling the repository. See `data/README.md` for its expected format.
@@ -102,9 +101,9 @@ This script writes PDF figures into the current working directory.
 ```text
 .
 ├── README.md
-├── .Renviron.example
 ├── code/
-│   ├── .Renviron             # local only; not committed
+│   ├── .Renviron.example
+│   ├── .Renviron             # created locally; not committed
 │   ├── 00setup.r
 │   ├── thesis plota.r
 │   ├── code.Rproj
@@ -112,9 +111,10 @@ This script writes PDF figures into the current working directory.
 │   └── renv/
 └── data/
     ├── README.md
-    ├── Rates to send_hardcoded.xlsx
+    ├── Irishlife_annuity_data.xlsx
     ├── ECB_AAA_SpotCurve.zip    # tracked with Git LFS
     └── glcnominalddata/
+        └── BoE_daily_SpotCurve_2016-2024.xlsx
 ```
 
 R session files, IDE settings, credentials, temporary Office files, and generated figures are excluded from version control.

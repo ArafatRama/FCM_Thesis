@@ -4,7 +4,9 @@ The main analysis uses the files in this directory together with mortality data 
 
 ## Included file
 
-`Rates to send_hardcoded.xlsx` contains the Mercer annuity-rate input used by the pricing calibration.
+`Irishlife_annuity_data.xlsx` contains the Irish Life annuity-rate input used by the pricing calibration.
+
+`glcnominalddata/BoE_daily_SpotCurve_2016-2024.xlsx` contains the Bank of England nominal daily spot-curve input used for bond pricing.
 
 ## ECB yield-curve data
 
