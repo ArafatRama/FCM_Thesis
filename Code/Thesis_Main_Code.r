@@ -2793,7 +2793,7 @@ seed_price<-20260820
 # Let the data determine the sign of alpha_cdf and use lambda_proc = -alpha_cdf for pricing.
 lambda_source<-"market_annuity"
 # Irish annuity quote used as the UK proxy.
-Irishlife_file<-"../data/Irishlife_annuity_data.xlsx"
+Irishlife_file<-"../Data/Irishlife_annuity_data.xlsx"
 Irishlife_sheet<-"Sheet1"
 # Match the annuity commencement date to the pricing origin.
 annuity_commencement_date<-as.Date("2020-01-01")
@@ -2809,12 +2809,12 @@ annuity_age<-65
 annuity_singlelife<-TRUE
 apply_commission_to_fund<-TRUE
 # Use the Bank of England nominal spot curve at the issue date for bond pricing.
-boe_file<-"../data/glcnominalddata/BoE_daily_SpotCurve_2016-2024.xlsx"
+boe_file<-"../Data/glcnominalddata/BoE_daily_SpotCurve_2016-2024.xlsx"
 boe_sheet<-"4. spot curve"
 # Use the ECB euro spot curve for annuity calibration.
 annuity_discount_source<-"ecb_eur"
 ecb_aaa_source <- read.csv(
-  unz("../data/ECB_AAA_SpotCurve.zip","data.csv"),
+  unz("../Data/ECB_AAA_SpotCurve.zip","data.csv"),
   stringsAsFactors=FALSE
 )
 

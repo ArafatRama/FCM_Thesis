@@ -23,6 +23,6 @@ renv/python/
 ~$*
 
 # Figures produced by the standalone plotting script
-code/wang_normal.pdf
-code/wang_lognormal.pdf
-code/activation_functions.pdf
+Code/wang_normal.pdf
+Code/wang_lognormal.pdf
+Code/activation_functions.pdf

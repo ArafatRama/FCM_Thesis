@@ -13,7 +13,7 @@ The main analysis uses the files in this directory together with mortality data 
 The approximately 3.3 GB `data.csv` input is stored in a compressed archive tracked with Git LFS. Install Git LFS before cloning or pulling the repository so the archive is downloaded to:
 
 ```text
-data/ECB_AAA_SpotCurve.zip
+Data/ECB_AAA_SpotCurve.zip
 ```
 
 The archive must contain `data.csv`. The supplied analysis expects that CSV's header to begin with the following fields:
