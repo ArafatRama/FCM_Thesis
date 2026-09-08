@@ -3018,7 +3018,7 @@ ecb_maturity<-chosen$maturity
 ecb_spot_cc<-chosen$spot_pct/100
 # Hold the curve flat beyond the last published maturity.
 spot_cc_curve_annuity<-approx(x=ecb_maturity,y=ecb_spot_cc,xout=h_seq_price,
-                              method="linear",rule=2,ties="ordered")$y
+                              method="linear",rule=2,ties="ordered")$y #another mathod that gives the same result as pmin
 annuity_curve_date<-ecb_curve_date
 annuity_curve_ccy<-"EUR"
 annuity_curve_last_maturity<-max(ecb_maturity)
@@ -3038,8 +3038,7 @@ print(data.frame(sex=sexes,quote_date=annuity_quote_date[sexes],
                 ))
 
 # Chapter 6: Longevity Bond Pricing
-# Section 6.2: Monte Carlo Pricing under the Martingale Measure
-
+# Section 6.2: Monte Carlo Pricing under the Martingale Measure - Monte carlo simulation 
 # Simulate real-world kappa paths.
 sim_kappa_P<-function(rw,H,eps){
   n<-nrow(eps)
@@ -3055,10 +3054,12 @@ for(sex in sexes){
   pricing[[sex]]$kappa_P<-kappa_P
   pricing[[sex]]$kappa_central<-pricing[[sex]]$rwd$kt_last+h_seq_price*pricing[[sex]]$rwd$theta
 }
+
+# Functions:
 # Extend mortality beyond age 100.
 logit_f<-function(p) log(p/(1-p))
 expit_f<-function(z) 1/(1+exp(-z))
-# Fit the Kannisto closure for each fixed kappa value.
+# Fit the Kannisto closure for each simulated path.
 closure_logm<-function(ax,bx,kappa,age_out,band,model,anchor){
   band_names<-as.character(band)
   logm_band<-outer(as.numeric(bx[band_names]),kappa)+as.numeric(ax[band_names])
@@ -3081,10 +3082,10 @@ closure_logm<-function(ax,bx,kappa,age_out,band,model,anchor){
     linear_predictor
   }
 }
+                     
 # Chapter 6: Longevity Bond Pricing
 # Section 6.4: Survival Probabilities and Term Structure
-
-# Calculate cohort survival under P.
+# Functions: Calculate cohort survival under P.
 cohort_survival<-function(ax,bx,ages_fit,kappa_paths,mortality_ages,
                           mortality_years,payment_years,terminal_age,
                           band,model,anchor){
@@ -3114,6 +3115,7 @@ cohort_survival<-function(ax,bx,ages_fit,kappa_paths,mortality_ages,
   colnames(survival)<-as.character(payment_years)
   list(logm=logm,p_one_year=p_one_year,survival=survival)
 }
+#implementation
 for(sex in sexes){
   pr<-pricing[[sex]]
   surv_P<-cohort_survival(ax=pr$ax,bx=pr$bx,ages_fit=pr$ages,
@@ -3152,10 +3154,12 @@ for(sex in sexes){
 # Chapter 6: Longevity Bond Pricing
 # Section 6.3: Calibration of the Wang Parameter $\lambda$
 
+# Functions:
 # Define empirical Wang weights for simulated survival probabilities.
 wang_weights_upper<-function(n,alpha){
   u<-1-(0:n)/n #n+1 points and desending matching the survival way
   weights<- -diff(pnorm(qnorm(u)+alpha)) #diff result in n points #minus to define the weights as positive
+  #cheching the boundary conditions for the Wang
   if(any(weights < -1e-12)||abs(sum(weights)-1)>1e-10){
     stop("Invalid Wang weights")
   }
@@ -3173,12 +3177,12 @@ wang_mean_upper<-function(x,alpha){
 wang_survival_curve<-function(p_ann,alpha_cdf){
   q<-1-p_ann
   qstar<-q
-  interior<-q>0&q<1
+  interior<-q>0&q<1 #to avoind infinity issue we set them to stay infinity and only work on mid points
   qstar[interior]<-pnorm(qnorm(q[interior])+alpha_cdf)
   1-qstar # get the distorted survival 
 }
 
-# Value the quoted single-life annuity with monthly advance payments, a level guarantee, and no escalation.
+# Value the irishlife quoted single-life annuity with monthly advance payments, a level guarantee, and no escalation.
 # Interpolate survival log-linearly within each year and treat guaranteed payments as certain.
 annuity_value<-function(surv_cum,disc_cc,horizon_years,freq,timing,guarantee_years){
   H<-length(surv_cum)
@@ -3208,14 +3212,14 @@ annuity_value<-function(surv_cum,disc_cc,horizon_years,freq,timing,guarantee_yea
   }
   value
 }
-# the wang transformed annuty value
+# the wang transformed annuity value
 annuity_value_wang<-function(surv_cum,alpha_cdf,disc_cc,horizon_years,freq,
                              timing,guarantee_years){
   surv_star<-wang_survival_curve(surv_cum,alpha_cdf)
   annuity_value(surv_star,disc_cc,horizon_years,freq,timing,guarantee_years)
 }
 
-# Solve for alpha_cdf using the selected annuity discount curve.
+# Solve for alpha_cdf using the ECB annuity discount curve.
 calibrate_alpha_from_annuity<-function(p_ann,target_price,
                                        disc_cc=spot_cc_curve_annuity,
                                        interval=c(-3,3)){
@@ -3224,7 +3228,7 @@ calibrate_alpha_from_annuity<-function(p_ann,target_price,
                        horizon_years=H_price,freq=annuity_payment_freq,
                        timing=annuity_payment_timing,
                        guarantee_years=annuity_guarantee_years)-target_price}
-  f_interval<-vapply(interval,f,numeric(1))
+  f_interval<-vapply(interval,f,numeric(1)) # making sure we are in the middle
   if(prod(f_interval)>0){
     stop("The annuity target ",round(target_price,4),
          " is not bracketed by alpha in [",interval[1],", ",interval[2],
@@ -3235,6 +3239,8 @@ calibrate_alpha_from_annuity<-function(p_ann,target_price,
   uniroot(f,interval=interval,tol=1e-10)$root
 }
 
+
+# Implementation
 # Calibrate alpha_cdf by distorting the reference survival curve.
 lambda_proc<-setNames(numeric(length(sexes)),sexes)
 lambda_calibration_table<-NULL
@@ -3273,9 +3279,7 @@ print(data.frame(sex=sexes,source=lambda_source,
                  row.names=NULL))
 print(round_numeric_df(lambda_calibration_table,8),row.names=FALSE)
 
-# Chapter 6: Longevity Bond Pricing
-# Section 6.2: Monte Carlo Pricing under the Martingale Measure
-
+                     
 # Apply the Wang transform using the calibrated lambda.
 # Process route
 shift_kappa_Q<-function(kappa_P,rw,lambda){
@@ -3310,20 +3314,20 @@ for(sex in sexes){
     wang_mean_upper_sorted(pr$surv_sorted[,h], lambda_sex*sqrt(h)) #alpha_h=lambda*sqrt(h)
   },numeric(1))
 }
-#Denuit constant route
+#Denuit constant route  # constant alpha = lambda
 for(sex in sexes){
   pr<-pricing[[sex]]
   lambda_sex<-unname(lambda_proc[sex])
   pricing[[sex]]$rho_Denuit<-vapply(seq_len(H_price),function(h){
-    wang_mean_upper_sorted(pr$surv_sorted[,h], lambda_sex) # constant alpha = lambda
+    wang_mean_upper_sorted(pr$surv_sorted[,h], lambda_sex)
   },numeric(1))
 }
 pricing$Female
   
-# Chapter 6: Longevity Bond Pricing
-# Section 6.5: The Relative Additive Margin
 
+# Section 6.5: The Relative Additive Margin 
 # Price the bond and calculate the relative additive margin.
+# Functions
 relative_additive_margin<-function(rho,p_ref,disc,maturity){
   h<-seq_len(maturity)
   sum(disc[h]*(rho[h]-p_ref[h]))/sum(disc[h])
@@ -3354,7 +3358,6 @@ standard_LB_path_values<-function(survival_paths,disc,maturity,notional=1){
 
 # Chapter 7: Empirical Results
 # Section 7.3: Bond Pricing Results
-
 bond_rows<-list()
 for(sex in sexes){
   pr<-pricing[[sex]]
@@ -3446,7 +3449,7 @@ for(sex in sexes){
     late_h<-seq.int(max(1L,length(curve)-9L),length(curve))
     early_slope<-unname(coef(lm(curve[early_h]~early_h))[2])
     late_slope<-unname(coef(lm(curve[late_h]~late_h))[2])
-    margin_shape_rows[[length(margin_shape_rows)+1L]]<-data.frame(
+    margin_shape_rows[[length(margin_shape_rows)+1]]<-data.frame(
       sex=sex,construction=construction,maximum_margin_per=max(curve),
       maturity_at_max=which.max(curve),bond_maturity_margin_per=curve[T_bond],
       terminal_margin_per=curve[length(curve)],under_five_per=all(curve<5),
@@ -3520,9 +3523,11 @@ if(run_lambda_sensitivity){
   cat("Sensitivity to the Wang parameter")
   print(round_numeric_df(lambda_sensitivity,6),row.names=FALSE)
 }
+# Discount curve sensetivity
 # The shift is applied to the pound bond curve only. lambda was calibrated on
 # the euro annuity curve and is held fixed, so this isolates the discounting
 # channel from the mortality-loading channel.
+spot_shift_grid<-c(-0.01,-0.005,0,0.005,0.01)
 rate_rows<-list()
 for(sex in sexes){
   pr<-pricing[[sex]]
@@ -3543,7 +3548,6 @@ print(round_numeric_df(rate_sensitivity,6),row.names=FALSE)
 
 # Chapter 7: Empirical Results
 # Section 7.1: Lee-Carter Calibration Results
-
 # Plots
 # PLOT: Kannisto closure of the mortality surface along the cohort diagonal . 
 par(mfrow=c(1,length(sexes)))
